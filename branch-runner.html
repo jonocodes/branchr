@@ -1,0 +1,23 @@
+<head>
+  <title>Branch Runner</title>
+</head>
+
+<body>
+  <!-- <h1>Branch Runner</h1> -->
+
+  Server time: {{time}}
+
+  <br /><br />
+
+  <h2>Branches</h2>
+  <ul>
+    {{#each branches}}
+      {{> branch}}
+    {{/each}}
+  </ul>
+
+</body>
+
+<template name="branch">
+  <li>{{name}}</li>
+</template>
