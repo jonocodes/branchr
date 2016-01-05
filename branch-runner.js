@@ -8,7 +8,7 @@ if (Meteor.isClient) {
       });
     }, 2000);
 
-    // setInterval(function () {
+    setInterval(function () {
       Meteor.call("getBranches", function(error, result) {
         resultList = [];
         result.forEach(function(val, i) {
@@ -19,7 +19,7 @@ if (Meteor.isClient) {
         Session.set("remoteBranches", resultList);
         console.log(Session.get("remoteBranches"));
       });
-    // }, 5000);
+    }, 5000);
 
   });
 
@@ -38,9 +38,9 @@ if (Meteor.isClient) {
 
 if (Meteor.isServer) {
 
-
   var Future = Npm.require('fibers/future');
   spawn = Npm.require('child_process').spawn;
+  var Git = Meteor.npmRequire('nodegit');
 
   // config
   var serviceName = 'Test App';
@@ -50,6 +50,22 @@ if (Meteor.isServer) {
   var dockerfilesDir = localGitDir;
   // end config
 
+
+  function getRemoteBranchesGit() {
+    // console.log('getRemoteBranchesGit');
+    Git.Repository.open(localGitDir + "/.git").then(function(repository) {
+      console.log(repository);
+
+      Git.Branch.iteratorNew(repository, GIT_BRANCH_LOCAL).then(function(branchIterator) {
+        console.log('branchIterator : ' + branchIterator);
+
+        for(let value of branchIterator){
+          console.log("I " + value)
+        }
+      });
+
+    });
+  }
 
   function getRemoteBranches() {
 
@@ -89,15 +105,16 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     getServerTime: function () {
-      console.log('getting time');
-        var _time = (new Date).toTimeString();
-        console.log(_time);
-        return _time;
+      var _time = (new Date).toTimeString();
+      // console.log(_time);
+      return _time;
     },
 
     getBranches: function() {
       var allBranches = getRemoteBranches();
-      var runingBranches = getRunningBranches();
+      // var runingBranches = getRunningBranches();
+
+      // getRemoteBranchesGit();
 
       return allBranches;
     }
