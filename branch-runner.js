@@ -2,8 +2,14 @@ if (Meteor.isClient) {
 
   Meteor.startup(function () {
 
+    console.log('client start');
+
     setInterval(function () {
+
+      console.log("getting time");
+
       Meteor.call("getServerTime", function (error, result) {
+        console.log("got time");
         Session.set("time", result);
       });
     }, 2000);
@@ -17,7 +23,7 @@ if (Meteor.isClient) {
           resultList.push(resultAssoc);
         });
         Session.set("remoteBranches", resultList);
-        // console.log(Session.get("remoteBranches"));
+        console.log(Session.get("remoteBranches"));
       });
     // }, 5000);
 
@@ -39,11 +45,11 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 
   // config
-  var serviceName = 'Test App'
+  // var serviceName = 'Test App';
   // var baseDir = "/home/jono/ownCloud/lambdaCd/"
   // var dockerfilesDir = baseDir + "/lcd-test-app";
   var localGitDir = '/home/jono/files/lambdacd/lcd-test-app';
-  var dockerfilesDir = localGitDir;
+  // var dockerfilesDir = localGitDir;
   // end config
 
   var Future = Npm.require('fibers/future');
@@ -58,7 +64,7 @@ if (Meteor.isServer) {
 
     command.stdout.on('data', function (data) {
       var branchNames = (""+data).trim().split("\n");
-      // console.log('remote branches: ' + branchNames);
+      console.log('remote branches: ' + branchNames);
 
       future.return(branchNames);
     });
@@ -84,6 +90,7 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     getServerTime: function () {
+      console.log('getting time');
         var _time = (new Date).toTimeString();
         console.log(_time);
         return _time;
