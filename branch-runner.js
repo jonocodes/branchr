@@ -13,7 +13,7 @@ if (Meteor.isClient) {
     setInterval(function () {
       Meteor.call("getBranches", function(error, result) {
         Session.set("remoteBranches", result);
-        console.log(Session.get("remoteBranches"));
+        // console.log(Session.get("remoteBranches"));
       });
     }, 5000);
 
@@ -29,17 +29,40 @@ if (Meteor.isClient) {
       return Session.get('remoteBranches');
     },
 
+    // currentBranch: function() {
+    //   return Session.get('currentBranch');
+    // }
+
     log: function() {
-      // console.log(Logs.find({}));
-      // return "log goes here";
-      return Logs.find({});
+
+      var b = Session.get('currentBranch');
+
+      console.log('current branch: ' + b);
+
+      console.log(Logs.find({branch:b}));
+      // return "log goes here : " + branchName;
+      return Logs.find({branch:b});
     }
 
   });
 
+  // Template.log.helpers({
+  //   log: function() {
+  //
+  //     var b = Session.get('currentBranch');
+  //
+  //     console.log('current branch: ' + b);
+  //
+  //     console.log(Logs.find({branch:b}));
+  //     // return "log goes here : " + branchName;
+  //     return Logs.find({branch:b});
+  //   }
+  // });
+
   Template.branch.events({
     'click button#start': function(event, template) {
       console.log('start ' + template.data['name']);
+      Session.set('currentBranch', template.data['name']);
       Meteor.call('startStack', template.data, function(error, result) {
         if(error){
           console.log(error);
@@ -161,7 +184,7 @@ if (Meteor.isServer) {
       // var future = new Future();
 
       command = spawn('sh', ['-c',
-      "ls && sleep 2 && ls -l && sleep 3 && la"]);
+      "ls && sleep 2 && ls -l && sleep 3 && ls -la"]);
 
       // if (Logs.find({ branch: branch['name']}).count() == 0) {
       //   Logs.insert({ branch: branch['name'], text=''});
@@ -172,14 +195,19 @@ if (Meteor.isServer) {
       Logs.update({ branch: branch['name'] },
         { branch: branch['name'], text:''}, { upsert : true });
 
-      command.stdout.on('data', function (data) {
-        console.log(''+data);
+      command.stdout.on('data',
+        Meteor.bindEnvironment(
+            function (data) {
+              console.log(''+data);
+              Logs.update({ branch: branch['name'] },  { branch: branch['name'], text: ''+data});
+            }
+        )
 
-        Logs.update({ branch: branch['name'] },
-          { branch: branch['name'], text: ''+data});  // TODO: concat
+        // Logs.update({ branch: branch['name'] },
+        //   { branch: branch['name'], text: ''+data});  // TODO: concat
 
         // future.return(''+data);
-      });
+      );
 
       command.stderr.on('data', function (data) {
         console.log("stderr: " + data);
@@ -201,7 +229,6 @@ if (Meteor.isServer) {
 
     getServerTime: function () {
       var _time = (new Date).toTimeString();
-      // console.log(_time);
       return _time;
     },
 

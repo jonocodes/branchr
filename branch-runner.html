@@ -17,7 +17,10 @@
   </ul>
 
   <h2>Log</h2>
-  {{log}}
+  <!-- {{log}} -->
+  {{#each log}}
+    {{> logarea}}
+  {{/each}}
 
 </body>
 
@@ -31,4 +34,9 @@
       <button id="start">start</button>
     {{/if}}
   </li>
+</template>
+
+<template name="logarea">
+  Branch: {{branch}}
+  <pre>{{text}}</pre>
 </template>
