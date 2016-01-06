@@ -16,8 +16,19 @@
     {{/each}}
   </ul>
 
+  <h2>Log</h2>
+  {{log}}
+
 </body>
 
 <template name="branch">
-  <li>{{name}}</li>
+  <li>{{name}}
+    {{#if running}}
+      <a href=http://localhost:{{port}}>http://localhost:{{port}}</a>
+      <button id="stop">stop</button>
+    {{else}}
+      (not running)
+      <button id="start">start</button>
+    {{/if}}
+  </li>
 </template>
