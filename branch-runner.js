@@ -1,8 +1,20 @@
+
+// config
+var serviceName = 'Test App';
+// var baseDir = "/home/jono/files/"
+// var dockerfilesDir = baseDir + "/lcd-test-app";
+// var localGitDir = '/home/jono/files/lcd-test-app';
+var localGitDir = '/home/jfinger/src/lcd-test-app';
+var dockerfilesDir = localGitDir;
+// end config
+
 Logs = new Mongo.Collection("logs");
 
 if (Meteor.isClient) {
 
   Meteor.startup(function () {
+
+    document.title = "Branchr ["+ serviceName +"]";
 
     setInterval(function () {
       Meteor.call("getServerTime", function (error, result) {
@@ -30,9 +42,8 @@ if (Meteor.isClient) {
     },
 
     log: function() {
-      var b = Session.get('currentBranch');
-      return Logs.find({branch:b});
-    }
+      return Logs.find({branch:Session.get('currentBranch')});
+    },
 
   });
 
@@ -71,14 +82,6 @@ if (Meteor.isServer) {
   const spawn = Npm.require('child_process').spawn;
   // const exec = Npm.require('child_process').exec;
   // var Git = Meteor.npmRequire('nodegit');    // slow startup
-
-  // config
-  var serviceName = 'Test App';
-  // var baseDir = "/home/jono/files/"
-  // var dockerfilesDir = baseDir + "/lcd-test-app";
-  var localGitDir = '/home/jono/files/lcd-test-app';
-  var dockerfilesDir = localGitDir;
-  // end config
 
   // function getRemoteBranchesGit() {  // TODO: get nexted then's to work
   //   // console.log('getRemoteBranchesGit');

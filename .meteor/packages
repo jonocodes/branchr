@@ -20,7 +20,6 @@ autopublish             # Publish all data to the clients (for prototyping)
 insecure                # Allow all DB writes from clients (for prototyping)
 #bruz:github-api
 #twbs:bootstrap
-meteorhacks:npm
-
-
-npm-container
+#meteorhacks:npm
+#npm-container
+# packages.json : { "nodegit": "0.6.3" }
