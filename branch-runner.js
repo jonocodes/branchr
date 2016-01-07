@@ -41,7 +41,7 @@ if (Meteor.isClient) {
       console.log('start ' + template.data['name']);
       Session.set('currentBranch', template.data['name']);
       Meteor.call('startStack', template.data, function(error, result) {
-        if(error){
+        if (error){
           console.log(error);
         }
         // else {
@@ -51,6 +51,15 @@ if (Meteor.isClient) {
     },
     'click button#stop': function(event, template) {
       console.log('stop ' + template.data['port']);
+      Session.set('currentBranch', template.data['name']);
+      Meteor.call('stopStack', template.data, function(error, result) {
+        if (error){
+          console.log(error);
+        }
+        // else {
+        //   console.log('response: ', result);
+        // }
+      });
     }
   });
 
@@ -59,7 +68,8 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
 
   var Future = Npm.require('fibers/future');
-  spawn = Npm.require('child_process').spawn;
+  const spawn = Npm.require('child_process').spawn;
+  // const exec = Npm.require('child_process').exec;
   // var Git = Meteor.npmRequire('nodegit');    // slow startup
 
   // config
@@ -121,8 +131,8 @@ if (Meteor.isServer) {
     "docker ps --format '{{.Names}}\t{{.Ports}}' | grep _web_1 | sed 's/_web_1//' | sed 's/0.0.0.0://' | sed 's/->.*//'"]);
 
     command.stdout.on('data', function (data) {
+
       var branches = (''+data).trim().split('\n');
-      // console.log('running branches: ' + branches);
 
       var resultList = {};
       branches.forEach(function(val, i) {
@@ -132,13 +142,17 @@ if (Meteor.isServer) {
         resultAssoc['port'] = exploded[1];
         resultList[exploded[0]] = resultAssoc;
       });
-      // console.log(resultList);
-
       future.return(resultList);
     });
 
     command.stderr.on('data', function (data) {
       console.log("stderr: " + data);
+    });
+
+    command.on('close', function(code) {
+      if (!future.isResolved()) {
+        future.return({});
+      }
     });
 
     return future.wait();
@@ -149,17 +163,46 @@ if (Meteor.isServer) {
     return Math.floor(Math.random() * (7000 - 5000)) + 5000;
   }
 
-  // function dockerNamify(name) {
-  //   // turn into a name that is a valid for a docker container
-  //   return name.replace(/[^a-zA-Z0-9_]/, "");
-  // }
+  function dockerNamify(name) {
+    // turn into a name that is a valid for a docker container
+    return name.replace(/[^a-zA-Z0-9_]/, "");
+  }
+
+  function logCommand(command, b) {
+
+    command.stdout.on('data', Meteor.bindEnvironment(function (data) {
+      // console.log(''+data);
+      var body = Logs.findOne({branch:b});
+      body['text'] = body['text'] + data;
+      Logs.update({ branch: b }, body);
+    }));
+
+    command.stderr.on('data', Meteor.bindEnvironment(function (data) {
+      // console.log('err: '+data);
+      var body = Logs.findOne({branch:b});
+      // body['errors'] = body['errors'] + data;
+      body['text'] = body['text'] + String(data);
+      Logs.update({ branch: b }, body);
+    }));
+
+    command.on('close', Meteor.bindEnvironment( function (code) {
+      var body = Logs.findOne({branch:b});
+      body['text'] = body['text'] + "\n= DONE =";
+      Logs.update({ branch: b }, body);
+      // TODO: force refresh here instead of waiting
+    }));
+  }
 
   Meteor.methods({
 
     startStack: function(branch) {
       var b = branch['name'];
-      var port = getUnusedPort()
+      var port = getUnusedPort();
+
       console.log("starting stack " + b + " port: " + port);
+
+      Logs.update({ branch: b },
+        { branch: b, text:'', errors:''}, { upsert : true });
 
       command = spawn('sh', ['-cx', [
         "cd " + localGitDir,
@@ -167,36 +210,27 @@ if (Meteor.isServer) {
         // "git pull",
         "cd " + localGitDir,
         "docker build -t lcdapp .",
-        "WEB_PORT="+port+" docker-compose -p " + b + " stop",
-        "WEB_PORT="+port+" docker-compose -p " + b + " up -d"
-      ].join(' && ')]);
+        "docker-compose -p " + b + " stop",
+        "docker-compose -p " + b + " up -d"
+      ].join(' && ')], { env: {WEB_PORT: port}});
 
+      logCommand(command, b);
+    },
+
+    stopStack: function(branch) {
+      var b = branch['name'];
+      var port = branch['port'];
+      // console.log("stopping stack " + b + " port: " + port);
 
       Logs.update({ branch: b },
         { branch: b, text:'', errors:''}, { upsert : true });
 
-      command.stdout.on('data',
-        Meteor.bindEnvironment(
-          function (data) {
-            // console.log(''+data);
-            var body = Logs.findOne({branch:b});
-            body['text'] = body['text'] + data;
-            Logs.update({ branch: b }, body);
-          }
-        )
-      );
+      command = spawn('sh', ['-cx', [
+        "cd " + localGitDir,
+        "docker-compose -p " + b + " stop"
+      ].join(' && ')], { env: {WEB_PORT: port}});
 
-      command.stderr.on('data',
-        Meteor.bindEnvironment(
-          function (data) {
-            console.log('err: '+data);
-            var body = Logs.findOne({branch:b});
-            body['errors'] = body['errors'] + data;
-            Logs.update({ branch: b }, body);
-          }
-        )
-      );
-
+      logCommand(command, b);
     },
 
     getServerTime: function () {
@@ -208,18 +242,19 @@ if (Meteor.isServer) {
       var allBranches = getRemoteBranches();
       var runningBranches = getRunningBranches();
 
-      allBranches.forEach(function(val, i){
-        if (runningBranches[val['name']] != null) {
-          val['port'] = runningBranches[val['name']]['port']
-          val['running'] = true;
-        } else {
-          val['port'] = 11111;
+      allBranches.forEach(function(val, i) {
+
+        var dockerName = dockerNamify(val['name']);
+
+        if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
           val['running'] = false;
+        } else {
+          val['port'] = runningBranches[dockerName]['port']
+          val['running'] = true;
         }
       });
 
       // console.log(allBranches);
-
       return allBranches;
     }
 
