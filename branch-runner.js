@@ -29,35 +29,12 @@ if (Meteor.isClient) {
       return Session.get('remoteBranches');
     },
 
-    // currentBranch: function() {
-    //   return Session.get('currentBranch');
-    // }
-
     log: function() {
-
       var b = Session.get('currentBranch');
-
-      console.log('current branch: ' + b);
-
-      console.log(Logs.find({branch:b}));
-      // return "log goes here : " + branchName;
       return Logs.find({branch:b});
     }
 
   });
-
-  // Template.log.helpers({
-  //   log: function() {
-  //
-  //     var b = Session.get('currentBranch');
-  //
-  //     console.log('current branch: ' + b);
-  //
-  //     console.log(Logs.find({branch:b}));
-  //     // return "log goes here : " + branchName;
-  //     return Logs.find({branch:b});
-  //   }
-  // });
 
   Template.branch.events({
     'click button#start': function(event, template) {
@@ -66,9 +43,10 @@ if (Meteor.isClient) {
       Meteor.call('startStack', template.data, function(error, result) {
         if(error){
           console.log(error);
-        } else {
-          console.log('response: ', result);
         }
+        // else {
+        //   console.log('response: ', result);
+        // }
       });
     },
     'click button#stop': function(event, template) {
@@ -108,11 +86,6 @@ if (Meteor.isServer) {
   //   });
   // }
 
-  function async(cb){
-    Meteor.setTimeout(function () {
-      cb(null, 'hello');
-    }, 3000);
-  }
 
   function getRemoteBranches() {
 
@@ -173,58 +146,57 @@ if (Meteor.isServer) {
 
   function getUnusedPort() {
     // TODO: check if port is used
-    return Math.random() * (7000 - 5000) + 500;
+    return Math.floor(Math.random() * (7000 - 5000)) + 5000;
   }
+
+  // function dockerNamify(name) {
+  //   // turn into a name that is a valid for a docker container
+  //   return name.replace(/[^a-zA-Z0-9_]/, "");
+  // }
 
   Meteor.methods({
 
     startStack: function(branch) {
-      console.log("starting stack " + branch['name'] + getUnusedPort());
+      var b = branch['name'];
+      var port = getUnusedPort()
+      console.log("starting stack " + b + " port: " + port);
 
-      // var future = new Future();
+      command = spawn('sh', ['-cx', [
+        "cd " + localGitDir,
+        "git checkout " + b,
+        // "git pull",
+        "cd " + localGitDir,
+        "docker build -t lcdapp .",
+        "WEB_PORT="+port+" docker-compose -p " + b + " stop",
+        "WEB_PORT="+port+" docker-compose -p " + b + " up -d"
+      ].join(' && ')]);
 
-      command = spawn('sh', ['-c',
-      "ls && sleep 2 && ls -l && sleep 3 && ls -la"]);
 
-      // if (Logs.find({ branch: branch['name']}).count() == 0) {
-      //   Logs.insert({ branch: branch['name'], text=''});
-      // } else {
-      //   Logs.update({ branch: branch['name']}, { $set : []  })
-      // }
-
-      Logs.update({ branch: branch['name'] },
-        { branch: branch['name'], text:''}, { upsert : true });
+      Logs.update({ branch: b },
+        { branch: b, text:'', errors:''}, { upsert : true });
 
       command.stdout.on('data',
         Meteor.bindEnvironment(
-            function (data) {
-              console.log(''+data);
-              Logs.update({ branch: branch['name'] },  { branch: branch['name'], text: ''+data});
-            }
+          function (data) {
+            // console.log(''+data);
+            var body = Logs.findOne({branch:b});
+            body['text'] = body['text'] + data;
+            Logs.update({ branch: b }, body);
+          }
         )
-
-        // Logs.update({ branch: branch['name'] },
-        //   { branch: branch['name'], text: ''+data});  // TODO: concat
-
-        // future.return(''+data);
       );
 
-      command.stderr.on('data', function (data) {
-        console.log("stderr: " + data);
-      });
+      command.stderr.on('data',
+        Meteor.bindEnvironment(
+          function (data) {
+            console.log('err: '+data);
+            var body = Logs.findOne({branch:b});
+            body['errors'] = body['errors'] + data;
+            Logs.update({ branch: b }, body);
+          }
+        )
+      );
 
-      // return future.wait();
-
-      // var fut = new Future();
-      // var bound_callback = Meteor.bindEnvironment(function (err, res) {
-      //   if (err) {
-      //     fut.throw(err);
-      //   } else {
-      //     fut.return(res)
-      //   }
-      // });
-      // async(bound_callback);
-      // fut.wait();
     },
 
     getServerTime: function () {

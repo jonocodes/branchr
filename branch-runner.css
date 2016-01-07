@@ -2,5 +2,12 @@
 body {
   background-color: black;
   color: white;
-  /*a: red;*/
+}
+
+a {
+  color: orange;
+}
+
+#errors {
+  color: red;
 }
