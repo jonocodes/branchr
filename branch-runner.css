@@ -11,3 +11,13 @@ a {
 #errors {
   color: red;
 }
+
+table {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+td, th {
+  padding: 10px;
+  text-align: left;
+}

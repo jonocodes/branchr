@@ -15,7 +15,7 @@ Make sure you can run docker without sudo.
 Checkout the git project(s) from github and then set the values
 
 Start the project with
-`meteor`
+`meteor --settings settings.json`
 
 ## TODO
 

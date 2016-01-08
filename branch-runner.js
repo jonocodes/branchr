@@ -1,14 +1,15 @@
 
-// config
-var serviceName = 'Test App';
-// var baseDir = "/home/jono/files/"
-// var dockerfilesDir = baseDir + "/lcd-test-app";
+// var serviceName = 'Test App';
+// // var baseDir = "/home/jono/files/"
+// // var dockerfilesDir = baseDir + "/lcd-test-app";
 // var localGitDir = '/home/jono/files/lcd-test-app';
-var localGitDir = '/home/jfinger/src/lcd-test-app';
-var dockerfilesDir = localGitDir;
-// end config
+// // var localGitDir = '/home/jfinger/src/lcd-test-app';
+// var dockerfilesDir = localGitDir;
 
-Logs = new Mongo.Collection("logs");
+var serviceName = Meteor.settings.public.serviceName;
+var localGitDir = Meteor.settings.public.localGitDir;
+
+Branches = new Mongo.Collection("branches");
 
 if (Meteor.isClient) {
 
@@ -42,17 +43,17 @@ if (Meteor.isClient) {
     },
 
     log: function() {
-      return Logs.find({branch:Session.get('currentBranch')});
+      return Branches.find({branch:Session.get('currentBranch')});
     },
 
   });
 
-  Template.branch.events({
-    'click button#start': function(event, template) {
+  Template.branchrow.events({
+    'click button.start': function(event, template) {
       console.log('start ' + template.data['name']);
       Session.set('currentBranch', template.data['name']);
       Meteor.call('startStack', template.data, function(error, result) {
-        if (error){
+        if (error) {
           console.log(error);
         }
         // else {
@@ -60,17 +61,18 @@ if (Meteor.isClient) {
         // }
       });
     },
-    'click button#stop': function(event, template) {
-      console.log('stop ' + template.data['port']);
+    'click button.stop': function(event, template) {
+      console.log('stop ' + template.data['name']);
       Session.set('currentBranch', template.data['name']);
       Meteor.call('stopStack', template.data, function(error, result) {
-        if (error){
+        if (error) {
           console.log(error);
         }
-        // else {
-        //   console.log('response: ', result);
-        // }
       });
+    },
+    'click button.log': function(event, template) {
+      console.log('toggle log view ' + template.data['name']);
+      Session.set('currentBranch', template.data['name']);
     }
   });
 
@@ -114,7 +116,7 @@ if (Meteor.isServer) {
       branchNames.forEach(function(val, i) {
         resultAssoc = {};
         resultAssoc['name'] = val;
-        resultList.push(resultAssoc);
+        resultList.push(resultAssoc); // TODO: append since this is a stream?
       });
 
       future.return(resultList);
@@ -161,6 +163,26 @@ if (Meteor.isServer) {
     return future.wait();
   }
 
+  function getAllBranches() {
+    var allBranches = getRemoteBranches();
+    var runningBranches = getRunningBranches();
+
+    allBranches.forEach(function(val, i) {
+
+      var dockerName = dockerNamify(val['name']);
+
+      if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
+        val['running'] = false;
+      } else {
+        val['port'] = runningBranches[dockerName]['port']
+        val['running'] = true;
+      }
+    });
+
+    // console.log(allBranches);
+    return allBranches;
+  }
+
   function getUnusedPort() {
     // TODO: check if port is used
     return Math.floor(Math.random() * (7000 - 5000)) + 5000;
@@ -175,23 +197,23 @@ if (Meteor.isServer) {
 
     command.stdout.on('data', Meteor.bindEnvironment(function (data) {
       // console.log(''+data);
-      var body = Logs.findOne({branch:b});
-      body['text'] = body['text'] + data;
-      Logs.update({ branch: b }, body);
+      var body = Branches.findOne({branch:b});
+      body['log'] = body['log'] + data;
+      Branches.update({ branch: b }, body);
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment(function (data) {
       // console.log('err: '+data);
-      var body = Logs.findOne({branch:b});
+      var body = Branches.findOne({branch:b});
       // body['errors'] = body['errors'] + data;
-      body['text'] = body['text'] + String(data);
-      Logs.update({ branch: b }, body);
+      body['log'] = body['log'] + String(data);
+      Branches.update({ branch: b }, body);
     }));
 
     command.on('close', Meteor.bindEnvironment( function (code) {
-      var body = Logs.findOne({branch:b});
-      body['text'] = body['text'] + "\n= DONE =";
-      Logs.update({ branch: b }, body);
+      var body = Branches.findOne({branch:b});
+      body['log'] = body['log'] + "\n= DONE =";
+      Branches.update({ branch: b }, body);
       // TODO: force refresh here instead of waiting
     }));
   }
@@ -204,8 +226,8 @@ if (Meteor.isServer) {
 
       console.log("starting stack " + b + " port: " + port);
 
-      Logs.update({ branch: b },
-        { branch: b, text:'', errors:''}, { upsert : true });
+      Branches.update({ branch: b },
+        { branch: b, log:''}, { upsert : true });
 
       command = spawn('sh', ['-cx', [
         "cd " + localGitDir,
@@ -225,8 +247,8 @@ if (Meteor.isServer) {
       var port = branch['port'];
       // console.log("stopping stack " + b + " port: " + port);
 
-      Logs.update({ branch: b },
-        { branch: b, text:'', errors:''}, { upsert : true });
+      Branches.update({ branch: b },
+        { branch: b, log:''}, { upsert : true });
 
       command = spawn('sh', ['-cx', [
         "cd " + localGitDir,
@@ -265,5 +287,15 @@ if (Meteor.isServer) {
 
   Meteor.startup(function () {
     console.log('server start');
+
+    // setInterval(function () {
+    //   Meteor.call("getBranches", function(error, result) {
+    //   // var branches = getBranches();
+    //
+    //     // Session.set("remoteBranches", result);
+    //     // console.log(branches);
+    //   });
+    // }, 5000);
+
   });
 }

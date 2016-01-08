@@ -10,34 +10,45 @@
   <br />
 
   <h2>Branches</h2>
-  <ul>
+
+  <table>
+    <tr><th>branch</th><th>actions</th><th>status</th></tr>
     {{#each branches}}
-      {{> branch}}
+      {{> branchrow}}
     {{/each}}
-  </ul>
+  </table>
 
   <h2>Log</h2>
-  <!-- {{log}} -->
   {{#each log}}
     {{> logarea}}
   {{/each}}
 
 </body>
 
-<template name="branch">
-  <li>{{name}}
-    {{#if running}}
-      <a href=http://localhost:{{port}}>http://localhost:{{port}}</a>
-      <button id="stop">stop</button>
-    {{else}}
-      (not running)
-      <button id="start">start</button>
-    {{/if}}
-  </li>
+<template name="branchrow">
+  <tr>
+    <td>{{name}}</td>
+    <td>
+      {{#if running}}
+        <button class="stop">stop</button>
+      {{else}}
+        <button class="start">(re)start</button>
+      {{/if}}
+      <button class="log">log</button>
+    </td>
+    <td>
+      {{#if running}}
+        <a href=http://localhost:{{port}}>http://localhost:{{port}}</a>
+      {{else}}
+        (not running)
+      {{/if}}
+    </td>
+  </tr>
 </template>
+
 
 <template name="logarea">
   Branch: {{branch}}
-  <pre>{{text}}</pre>
-  <pre id="errors">{{errors}}</pre>
+  <pre>{{log}}</pre>
+  <!-- <pre id="errors">{{errors}}</pre> -->
 </template>
