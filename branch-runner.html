@@ -5,14 +5,15 @@
 <body>
   <!-- <h1>Branchr</h1> -->
 
-  Server time: {{time}}
-
-  <br />
+  <div class="time">
+    Server time: {{time}}
+  </div>
 
   <h2>{{serviceName}} Branches</h2>
 
   <table>
-    <tr><th>branch</th><th>actions</th><th>status</th></tr>
+    <tr><th>branch</th><th>last commit</th><th>actions</th>
+      <th>watching</th><th>status</th></tr>
     {{#each branches}}
       {{> branchrow}}
     {{/each}}
@@ -29,6 +30,16 @@
   <tr>
     <td>{{branch}}</td>
     <td>
+      <div class="commit">
+      {{#with lastCommit}}
+        {{checksum}}<br />
+        {{author}}<br />
+        {{date}}<br />
+        {{title}}
+      {{/with}}
+      </div>
+    </td>
+    <td>
       {{#if running}}
         <button class="stop">stop</button>
       {{else}}
@@ -39,6 +50,9 @@
       <button class="disable">disable</button> -->
 
       <button class="log">log</button>
+    </td>
+    <td>
+      <input type="checkbox" class="watchbox" checked="{{isWatching}}">
     </td>
     <td>
       {{status}}

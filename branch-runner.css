@@ -1,7 +1,6 @@
-/* CSS declarations go here */
 body {
-  background-color: black;
-  color: white;
+  /*background-color: black;
+  color: white;*/
 }
 
 a {
@@ -20,4 +19,12 @@ table {
 td, th {
   padding: 10px;
   text-align: left;
+}
+
+.time {
+  float: right;
+}
+
+.commit {
+  font-size: small;
 }

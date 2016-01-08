@@ -38,6 +38,9 @@ if (Meteor.isClient) {
     url: function() {
       var protocol = 'http';
       return protocol + '://' + host + ':' + this.port;
+    },
+    isWatching: function() {
+      return this.watching !== undefined && this.watching;
     }
   });
 
@@ -46,26 +49,22 @@ if (Meteor.isClient) {
       console.log('start ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
       Meteor.call('startStack', template.data, function(error, result) {
-        if (error) {
+        if (error)
           console.log(error);
-        }
-        // else {
-        //   console.log('response: ', result);
-        // }
       });
     },
     'click button.stop': function(event, template) {
       console.log('stop ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
-      Meteor.call('stopStack', template.data, function(error, result) {
-        if (error) {
-          console.log(error);
-        }
-      });
+      Meteor.call('stopStack', template.data);
     },
     'click button.log': function(event, template) {
       console.log('toggle log view ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
+    },
+    'change input.watchbox': function(event, template) {
+      console.log('toggle watch ' + template.data['branch']);
+      Meteor.call('toggleWatch', template.data['branch'], event.target.checked);
     }
   });
 
@@ -95,12 +94,44 @@ if (Meteor.isServer) {
   // }
 
 
+  function checkForUpdates(branchName) {
+
+
+  }
+
+  function getLastCommit(branchName) {
+
+    var future = new Future();
+
+    // console.log("git --git-dir=" + localGitDir + "/.git log " + branchName + " -1 --format='%h%n%an%n%aD%n%s'");
+
+    command = spawn('sh', ['-c',
+    "git --git-dir=" + localGitDir + "/.git log " + branchName + " -1 --format='%h%n%an%n%aD%n%s'"]);
+
+    command.stdout.on('data', function (data) {
+      var commit = (''+data).trim().split("\n");
+
+      future.return({
+        checksum: commit[0],
+        author: commit[1],
+        date: commit[2],
+        title: commit[3]
+      }); // TODO: append since this is a stream?
+    });
+
+    command.stderr.on('data', function (data) {
+      console.log("stderr: " + data);
+    });
+
+    return future.wait();
+  }
+
   function getRemoteBranches() {
 
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + localGitDir + "/.git branch --remote|sed 's/[^/]*\\///'"]);
+    "git --git-dir=" + localGitDir + "/.git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
       var branchNames = (''+data).trim().split("\n");
@@ -254,6 +285,12 @@ if (Meteor.isServer) {
       logCommand(command, b, "stopping...", "stopped");
     },
 
+    toggleWatch: function(branchName, watch) {
+      Branches.update({ branch: branchName }, { $set :
+        { watching : watch }
+      });
+    },
+
     getServerTime: function () {
       return (new Date).toTimeString();
     },
@@ -265,19 +302,22 @@ if (Meteor.isServer) {
 
     // TODO: clear log only on server start
 
-    setInterval(Meteor.bindEnvironment(function () {
+    setInterval(Meteor.bindEnvironment( function() {
       var branches = getAllBranches();
 
       branches.forEach(function(val, i) {
 
-        var status = 'not running';
-        if (val['running'])
-          status = 'running';
+        // var status = 'not running';
+        // if (val['running'])
+        //   status = 'running';
+        //
+        // console.log(getLastCommit(val['name']));
 
         Branches.update({ branch: val['name'] }, { $set:{
           branch: val['name'],
           running: val['running'],
           port: val['port'],
+          lastCommit: getLastCommit(val['name'])
         //  status: status
         }},
         { upsert : true });

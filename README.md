@@ -6,6 +6,7 @@ A continuous delivery pipeline for running git branches of a web service.
 * Docker
 * docker-compose
 * MeteorJS
+* git
 * an app to run (preferably 12 factor)
 
 ## Usage
@@ -20,6 +21,7 @@ Start the project with
 ## TODO
 
 * listen for git changes and update
+* allow config to check for branches and commits locally or remotely
 * enable/disable branches
 * show dates for git and docker run
 * style list
