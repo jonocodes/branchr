@@ -1,6 +1,7 @@
 
 var serviceName = Meteor.settings.public.serviceName;
 var localGitDir = Meteor.settings.public.localGitDir;
+var host = 'localhost';
 
 Branches = new Mongo.Collection("branches");
 
@@ -19,19 +20,25 @@ if (Meteor.isClient) {
   });
 
   Template.body.helpers({
-
     time: function() {
       return Session.get("time");
     },
-
-    branches: function() {
-      return Branches.find({});//Session.get('remoteBranches');
+    serviceName: function() {
+      return serviceName;
     },
-
+    branches: function() {
+      return Branches.find({});
+    },
     log: function() {
       return Branches.find({branch:Session.get('currentBranch')});
-    },
+    }
+  });
 
+  Template.branchrow.helpers({
+    url: function() {
+      var protocol = 'http';
+      return protocol + '://' + host + ':' + this.port;
+    }
   });
 
   Template.branchrow.events({
@@ -102,10 +109,10 @@ if (Meteor.isServer) {
       branchNames.forEach(function(val, i) {
         resultAssoc = {};
         resultAssoc['name'] = val;
-        resultList.push(resultAssoc); // TODO: append since this is a stream?
+        resultList.push(resultAssoc);
       });
 
-      future.return(resultList);
+      future.return(resultList); // TODO: append since this is a stream?
     });
 
     command.stderr.on('data', function (data) {
@@ -179,29 +186,37 @@ if (Meteor.isServer) {
     return name.replace(/[^a-zA-Z0-9_]/, "");
   }
 
-  function logCommand(command, b) {
+  function logCommand(command, b, actionStatus, successStatus) {
 
     Branches.update({ branch: b },{$set: { log:'' }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
       // console.log(''+data);
       var body = Branches.findOne({branch:b});
-      body['log'] = body['log'] + data;
-      Branches.update({ branch: b }, body); // TODO: simplify with $set
+      // body['log'] = body['log'] + data;
+      // Branches.update({ branch: b }, body); // TODO: simplify with $set
+      Branches.update({ branch: b }, { $set :
+        { log: body['log'] + data, status: actionStatus}
+      });
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
       // console.log('err: '+data);
       var body = Branches.findOne({branch:b});
       // body['errors'] = body['errors'] + data;
-      body['log'] = body['log'] + String(data);
-      Branches.update({ branch: b }, body);
+      // body['log'] = body['log'] + String(data);
+      // Branches.update({ branch: b }, body);
+      Branches.update({ branch: b }, { $set :
+        { log: body['log'] + data, status: actionStatus}
+      });
     }));
 
     command.on('close', Meteor.bindEnvironment( function(code) {
       var body = Branches.findOne({branch:b});
-      body['log'] = body['log'] + "\n= DONE =";
-      Branches.update({ branch: b }, body);
+      // body['log'] = body['log'] + "\n= DONE =";
+      Branches.update({ branch: b }, { $set :
+        { log: body['log'] + "\n= DONE =", status: successStatus}
+      });
       // TODO: force refresh here instead of waiting
     }));
   }
@@ -224,7 +239,7 @@ if (Meteor.isServer) {
         "docker-compose -p " + b + " up -d"
       ].join(' && ')], { env: {WEB_PORT: port}});
 
-      logCommand(command, b);
+      logCommand(command, b, "starting...", "running");
     },
 
     stopStack: function(branch) {
@@ -236,7 +251,7 @@ if (Meteor.isServer) {
         "docker-compose -p " + b + " stop"
       ].join(' && ')], { env: {WEB_PORT: port}});
 
-      logCommand(command, b);
+      logCommand(command, b, "stopping...", "stopped");
     },
 
     getServerTime: function () {
@@ -255,9 +270,16 @@ if (Meteor.isServer) {
 
       branches.forEach(function(val, i) {
 
-        Branches.update({ branch: val['name'] },
-          { $set: {branch: val['name'], running: val['running'],
-          port: val['port']}},
+        var status = 'not running';
+        if (val['running'])
+          status = 'running';
+
+        Branches.update({ branch: val['name'] }, { $set:{
+          branch: val['name'],
+          running: val['running'],
+          port: val['port'],
+        //  status: status
+        }},
         { upsert : true });
 
       });

@@ -9,7 +9,7 @@
 
   <br />
 
-  <h2>Branches</h2>
+  <h2>{{serviceName}} Branches</h2>
 
   <table>
     <tr><th>branch</th><th>actions</th><th>status</th></tr>
@@ -32,15 +32,18 @@
       {{#if running}}
         <button class="stop">stop</button>
       {{else}}
-        <button class="start">(re)start</button>
+        <button class="start">start</button>
       {{/if}}
+
+      <!-- <button class="enable">enable</button>
+      <button class="disable">disable</button> -->
+
       <button class="log">log</button>
     </td>
     <td>
+      {{status}}
       {{#if running}}
-        <a href=http://localhost:{{port}}>http://localhost:{{port}}</a>
-      {{else}}
-        (not running)
+        <br /><a href={{url}}>{{url}}</a>
       {{/if}}
     </td>
   </tr>
