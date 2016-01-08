@@ -32,9 +32,7 @@
     <td>
       <div class="commit">
       {{#with lastCommit}}
-        {{checksum}}<br />
-        {{author}}<br />
-        {{date}}<br />
+        <img src={{gravatar}} width=15> <span class=checksum>{{checksum}}</span> {{date}}<br />
         {{title}}
       {{/with}}
       </div>

@@ -4,13 +4,13 @@
     "localGitDir": "/home/jfinger/src/lcd-test-app",
 
     "requiredPorts" : {
-        "web" :{
-          "WEB_PORT": 0,
-          "PORT_HTTP_WEB": 0
-        },
-        "redis" : {
-          "PORT_TCP_REDIS": 0
-        }
+      "web" :{
+        "WEB_PORT": 0,
+        "PORT_HTTP_WEB": 0
+      },
+      "redis" : {
+        "PORT_TCP_REDIS": 0
       }
+    }
   }
 }

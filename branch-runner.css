@@ -28,3 +28,7 @@ td, th {
 .commit {
   font-size: small;
 }
+
+.checksum {
+  color: grey;
+}

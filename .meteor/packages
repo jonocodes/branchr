@@ -23,3 +23,4 @@ insecure                # Allow all DB writes from clients (for prototyping)
 #meteorhacks:npm
 #npm-container
 # packages.json : { "nodegit": "0.6.3" }
+jparker:crypto-md5

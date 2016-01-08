@@ -103,20 +103,22 @@ if (Meteor.isServer) {
 
     var future = new Future();
 
-    // console.log("git --git-dir=" + localGitDir + "/.git log " + branchName + " -1 --format='%h%n%an%n%aD%n%s'");
+    // console.log("git --git-dir=" + localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%aD%n%s'");
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + localGitDir + "/.git log " + branchName + " -1 --format='%h%n%an%n%aD%n%s'"]);
+    "git --git-dir=" + localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae'"]);
 
     command.stdout.on('data', function (data) {
       var commit = (''+data).trim().split("\n");
 
       future.return({
-        checksum: commit[0],
+        checksum: commit[0],    // can this be done with some fancy explode function?
         author: commit[1],
         date: commit[2],
-        title: commit[3]
-      }); // TODO: append since this is a stream?
+        title: commit[3],
+        email: commit[4],
+        gravatar: "https://www.gravatar.com/avatar/" + CryptoJS.MD5(commit[4]).toString()
+      });
     });
 
     command.stderr.on('data', function (data) {
