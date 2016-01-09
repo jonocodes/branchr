@@ -2,6 +2,7 @@
 var serviceName = Meteor.settings.public.serviceName;
 var localGitDir = Meteor.settings.public.localGitDir;
 var host = 'localhost';
+// TODO: toggle listening local or remote (default)
 
 Branches = new Mongo.Collection("branches");
 
@@ -94,16 +95,40 @@ if (Meteor.isServer) {
   // }
 
 
-  function checkForUpdates(branchName) {
+  function checkForUpdate(branchName, branchInDb) {
+    var future = new Future();
 
+    console.log('checking for updates in ' + branchName);
+    command = spawn('sh', ['-c',
+    "git --git-dir=" + localGitDir + "/.git pull"]);
 
+    command.stdout.on('data', function (data) {
+      future.return(data);
+    });
+
+    command.stderr.on('data', function (data) {
+      console.log("stderr: " + data);
+    });
+
+    future.wait();
+
+    var lastCommit = getLastCommit(branchName);
+    var runningCommit = branchInDb['lastCommit'];
+
+    if (lastCommit['checksum'] !== runningCommit['checksum']) {
+      console.log('git was updated for ' + branchName);
+
+      // TODO: queue up instead of calling immediately?
+
+      Meteor.call('startStack', branchInDb);
+    }
+
+    return false;
   }
 
   function getLastCommit(branchName) {
 
     var future = new Future();
-
-    // console.log("git --git-dir=" + localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%aD%n%s'");
 
     command = spawn('sh', ['-c',
     "git --git-dir=" + localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae'"]);
@@ -112,7 +137,7 @@ if (Meteor.isServer) {
       var commit = (''+data).trim().split("\n");
 
       future.return({
-        checksum: commit[0],    // can this be done with some fancy explode function?
+        checksum: commit[0],
         author: commit[1],
         date: commit[2],
         title: commit[3],
@@ -121,9 +146,10 @@ if (Meteor.isServer) {
       });
     });
 
-    command.stderr.on('data', function (data) {
+    command.stderr.on('data', function(data) {
       console.log("stderr: " + data);
     });
+
 
     return future.wait();
   }
@@ -141,7 +167,7 @@ if (Meteor.isServer) {
       var resultList = [];
       branchNames.forEach(function(val, i) {
         resultAssoc = {};
-        resultAssoc['name'] = val;
+        resultAssoc['branch'] = val;
         resultList.push(resultAssoc);
       });
 
@@ -169,7 +195,7 @@ if (Meteor.isServer) {
       branches.forEach(function(val, i) {
         resultAssoc = {};
         var exploded = val.split('\t');
-        resultAssoc['name'] = exploded[0];
+        resultAssoc['branch'] = exploded[0];
         resultAssoc['port'] = exploded[1];
         resultList[exploded[0]] = resultAssoc;
       });
@@ -195,7 +221,7 @@ if (Meteor.isServer) {
 
     allBranches.forEach(function(val, i) {
 
-      var dockerName = dockerNamify(val['name']);
+      var dockerName = dockerNamify(val['branch']);
 
       if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
         val['running'] = false;
@@ -205,7 +231,7 @@ if (Meteor.isServer) {
       }
     });
 
-    // console.log(allBranches);
+    console.log("branch count: " + allBranches.length);
     return allBranches;
   }
 
@@ -224,21 +250,14 @@ if (Meteor.isServer) {
     Branches.update({ branch: b },{$set: { log:'' }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
-      // console.log(''+data);
       var body = Branches.findOne({branch:b});
-      // body['log'] = body['log'] + data;
-      // Branches.update({ branch: b }, body); // TODO: simplify with $set
       Branches.update({ branch: b }, { $set :
         { log: body['log'] + data, status: actionStatus}
       });
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
-      // console.log('err: '+data);
       var body = Branches.findOne({branch:b});
-      // body['errors'] = body['errors'] + data;
-      // body['log'] = body['log'] + String(data);
-      // Branches.update({ branch: b }, body);
       Branches.update({ branch: b }, { $set :
         { log: body['log'] + data, status: actionStatus}
       });
@@ -246,7 +265,6 @@ if (Meteor.isServer) {
 
     command.on('close', Meteor.bindEnvironment( function(code) {
       var body = Branches.findOne({branch:b});
-      // body['log'] = body['log'] + "\n= DONE =";
       Branches.update({ branch: b }, { $set :
         { log: body['log'] + "\n= DONE =", status: successStatus}
       });
@@ -257,6 +275,7 @@ if (Meteor.isServer) {
   Meteor.methods({
 
     startStack: function(branch) {
+      // startStack(branch);
       var b = branch['branch'];
       var port = getUnusedPort();
 
@@ -302,28 +321,45 @@ if (Meteor.isServer) {
   Meteor.startup(function () {
     console.log('server start');
 
-    // TODO: clear log only on server start
+    // Branches.remove({});
 
-    setInterval(Meteor.bindEnvironment( function() {
+    Meteor.bindEnvironment( function() {
       var branches = getAllBranches();
 
       branches.forEach(function(val, i) {
 
-        // var status = 'not running';
-        // if (val['running'])
-        //   status = 'running';
-        //
-        // console.log(getLastCommit(val['name']));
+        Branches.update({ branch: val['branch'] }, { $set:{
+          branch: val['branch'],
+          lastCommit: getLastCommit(val['branch']),  // might not be same as running?
+          log: ''   // TODO: why no work?
+        }},
+        { upsert : true });
 
-        Branches.update({ branch: val['name'] }, { $set:{
-          branch: val['name'],
+      });
+    });
+
+    setInterval(Meteor.bindEnvironment( function() {
+
+      // listen for new/old patches
+      var branches = getAllBranches();
+
+      branches.forEach(function(val, i) {
+
+        Branches.update({ branch: val['branch'] }, { $set:{
           running: val['running'],
           port: val['port'],
-          lastCommit: getLastCommit(val['name'])
+          // lastCommit: getLastCommit(val['name'])  // might not be same as running?
         //  status: status
         }},
         { upsert : true });
 
+      });
+
+      // listen to existing branches for changes
+      var watchBranches = Branches.find({ watching: true });
+
+      watchBranches.forEach(function(val, i) {
+        checkForUpdate(val['branch'], val);
       });
 
     }), 5000);

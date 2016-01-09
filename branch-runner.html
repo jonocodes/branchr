@@ -7,13 +7,14 @@
 
   <div class="time">
     Server time: {{time}}
+    <!-- <br />Repo: Local -->
   </div>
 
-  <h2>{{serviceName}} Branches</h2>
+  <h2>{{serviceName}}</h2>
 
   <table>
     <tr><th>branch</th><th>last commit</th><th>actions</th>
-      <th>watching</th><th>status</th></tr>
+      <th>watch</th><th>status</th></tr>
     {{#each branches}}
       {{> branchrow}}
     {{/each}}
@@ -55,6 +56,7 @@
     <td>
       {{status}}
       {{#if running}}
+        <!-- docker uptime -->
         <br /><a href={{url}}>{{url}}</a>
       {{/if}}
     </td>
