@@ -23,5 +23,8 @@ Start the project with
 * queue found git changes so builds dont fall over eachother
 * allow config to check for branches and commits locally or remotely
 * show dates/uptime for git and docker run
+* fetch unused ports instead of random ones
+* parse compose file instead of setting ports in config
+* show when git last commit is different then the last deployed checksum
 * growl git updates?
 * style it!

@@ -1,18 +1,12 @@
 web:
-  # build: .
   image: $IMAGE
   ports:
-    # - 5000:5000
-   - $WEB_PORT:5000
-  #  - 5005:5000
-  #  - 5010:6000
-  #  - $HTTP_PORT:5000
+   - $PORT_HTTP_WEB:5000
   # volumes:
   #  - .:/code
   links:
    - redis
 redis:
   ports:
-    # - 6379:6379
     - $PORT_TCP_REDIS:6379
   image: redis

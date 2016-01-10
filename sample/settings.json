@@ -6,7 +6,6 @@
 
     "requiredPorts" : {
       "web" : [
-        "WEB_PORT",
         "PORT_HTTP_WEB"
       ],
       "redis" : [

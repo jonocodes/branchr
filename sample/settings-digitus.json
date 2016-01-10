@@ -2,15 +2,15 @@
   "public": {
     "serviceName": "Test App",
     "localGitDir": "/home/jfinger/src/lcd-test-app",
+    "dockerComposeFile": "/home/jfinger/src/branchr/sample/docker-compose.yml",
 
     "requiredPorts" : {
-      "web" :{
-        "WEB_PORT": 0,
-        "PORT_HTTP_WEB": 0
-      },
-      "redis" : {
-        "PORT_TCP_REDIS": 0
-      }
+      "web" : [
+        "PORT_HTTP_WEB"
+      ],
+      "redis" : [
+        "PORT_TCP_REDIS"
+      ]
     }
   }
 }
