@@ -6,11 +6,16 @@ var host = 'localhost';
 
 Branches = new Mongo.Collection("branches");
 
+Logger.setLevel('trace');
+var log = new Logger('app');
+
 if (Meteor.isClient) {
 
   Meteor.startup(function () {
 
     document.title = "Branchr ["+ serviceName +"]";
+
+    log.info("starting client");
 
     setInterval(function () {
       Meteor.call("getServerTime", function (error, result) {
@@ -47,24 +52,24 @@ if (Meteor.isClient) {
 
   Template.branchrow.events({
     'click button.start': function(event, template) {
-      console.log('start ' + template.data['branch']);
+      log.info('start ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
       Meteor.call('startStack', template.data, function(error, result) {
         if (error)
-          console.log(error);
+          log.error(error);
       });
     },
     'click button.stop': function(event, template) {
-      console.log('stop ' + template.data['branch']);
+      log.info('stop ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
       Meteor.call('stopStack', template.data);
     },
     'click button.log': function(event, template) {
-      console.log('toggle log view ' + template.data['branch']);
+      log.info('toggle log view ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
     },
     'change input.watchbox': function(event, template) {
-      console.log('toggle watch ' + template.data['branch']);
+      log.info('toggle watch ' + template.data['branch']);
       Meteor.call('toggleWatch', template.data['branch'], event.target.checked);
     }
   });
@@ -75,19 +80,22 @@ if (Meteor.isServer) {
 
   var Future = Npm.require('fibers/future');
   const spawn = Npm.require('child_process').spawn;
+
+  var baseImage = dockerNamify(serviceName);
+
   // const exec = Npm.require('child_process').exec;
   // var Git = Meteor.npmRequire('nodegit');    // slow startup
 
   // function getRemoteBranchesGit() {  // TODO: get nexted then's to work
-  //   // console.log('getRemoteBranchesGit');
+  //   // log.info('getRemoteBranchesGit');
   //   Git.Repository.open(localGitDir + "/.git").then(function(repository) {
-  //     console.log(repository);
+  //     log.info(repository);
   //
   //     Git.Branch.iteratorNew(repository, GIT_BRANCH_LOCAL).then(function(branchIterator) {
-  //       console.log('branchIterator : ' + branchIterator);
+  //       log.info('branchIterator : ' + branchIterator);
   //
   //       for(let value of branchIterator){
-  //         console.log("I " + value)
+  //         log.info("I " + value)
   //       }
   //     });
   //
@@ -98,7 +106,7 @@ if (Meteor.isServer) {
   function checkForUpdate(branchName, branchInDb) {
     var future = new Future();
 
-    console.log('checking for updates in ' + branchName);
+    log.info('checking for updates in ' + branchName);
     command = spawn('sh', ['-c',
     "git --git-dir=" + localGitDir + "/.git pull"]);
 
@@ -107,7 +115,7 @@ if (Meteor.isServer) {
     });
 
     command.stderr.on('data', function (data) {
-      console.log("stderr: " + data);
+      log.error("stderr: " + data);
     });
 
     future.wait();
@@ -116,7 +124,7 @@ if (Meteor.isServer) {
     var runningCommit = branchInDb['lastCommit'];
 
     if (lastCommit['checksum'] !== runningCommit['checksum']) {
-      console.log('git was updated for ' + branchName);
+      log.info('git was updated for ' + branchName);
 
       // TODO: queue up instead of calling immediately?
 
@@ -147,7 +155,7 @@ if (Meteor.isServer) {
     });
 
     command.stderr.on('data', function(data) {
-      console.log("stderr: " + data);
+      log.error("stderr: " + data);
     });
 
 
@@ -175,7 +183,7 @@ if (Meteor.isServer) {
     });
 
     command.stderr.on('data', function (data) {
-      console.log("stderr: " + data);
+      log.error("stderr: " + data);
     });
 
     return future.wait();
@@ -197,13 +205,14 @@ if (Meteor.isServer) {
         var exploded = val.split('\t');
         resultAssoc['branch'] = exploded[0];
         resultAssoc['port'] = exploded[1];
+        // resultAssoc['uptime'] = exploded[2];
         resultList[exploded[0]] = resultAssoc;
       });
       future.return(resultList);
     });
 
     command.stderr.on('data', function (data) {
-      console.log("stderr: " + data);
+      log.error("stderr: " + data);
     });
 
     command.on('close', function(code) {
@@ -231,7 +240,7 @@ if (Meteor.isServer) {
       }
     });
 
-    console.log("branch count: " + allBranches.length);
+    log.info("branch count: " + allBranches.length);
     return allBranches;
   }
 
@@ -242,7 +251,7 @@ if (Meteor.isServer) {
 
   function dockerNamify(name) {
     // turn into a name that is a valid for a docker container
-    return name.replace(/[^a-zA-Z0-9_]/, "");
+    return name.toLowerCase().replace(/[^a-z0-9_]/g, "");
   }
 
   function logCommand(command, b, actionStatus, successStatus) {
@@ -250,6 +259,7 @@ if (Meteor.isServer) {
     Branches.update({ branch: b },{$set: { log:'' }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
+      log.debug(data.toString());
       var body = Branches.findOne({branch:b});
       Branches.update({ branch: b }, { $set :
         { log: body['log'] + data, status: actionStatus}
@@ -257,6 +267,7 @@ if (Meteor.isServer) {
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
+      log.error(data.toString());
       var body = Branches.findOne({branch:b});
       Branches.update({ branch: b }, { $set :
         { log: body['log'] + data, status: actionStatus}
@@ -278,18 +289,25 @@ if (Meteor.isServer) {
       // startStack(branch);
       var b = branch['branch'];
       var port = getUnusedPort();
+      var image = baseImage + ':' + b;
 
-      console.log("starting stack " + b + " port: " + port);
+      log.info("starting stack " + b + " port: " + port);
+
+      var envs = {
+        WEB_PORT: port,
+        // HTTP_PORT: port,
+        IMAGE: image
+      }
 
       command = spawn('sh', ['-cx', [
         "cd " + localGitDir,
-        "git checkout " + b,
-        // "git pull",
+        "git checkout " + b,       // TODO: handle error code returns
+        "git pull",
         "cd " + localGitDir,
-        "docker build -t lcdapp .",
+        "docker build -t $IMAGE .",
         "docker-compose -p " + b + " stop",
         "docker-compose -p " + b + " up -d"
-      ].join(' && ')], { env: {WEB_PORT: port}});
+      ].join(' && ')], { env: envs });
 
       logCommand(command, b, "starting...", "running");
     },
@@ -319,7 +337,7 @@ if (Meteor.isServer) {
   });
 
   Meteor.startup(function () {
-    console.log('server start');
+    log.info('server start');
 
     // Branches.remove({});
 
@@ -358,11 +376,12 @@ if (Meteor.isServer) {
       // listen to existing branches for changes
       var watchBranches = Branches.find({ watching: true });
 
+      // TODO: implement queue here so the same build does not fall over itself
       watchBranches.forEach(function(val, i) {
         checkForUpdate(val['branch'], val);
       });
 
-    }), 5000);
+    }), 10000);
 
   });
 }
