@@ -2,7 +2,7 @@
   "public": {
     "serviceName": "Test App",
     "localGitDir": "/home/jono/files/lcd-test-app",
-    "dockerComposeFile": "sample/docker-compose.yml",
+    "dockerComposeFile": "/home/jono/files/branchr/sample/docker-compose.yml",
 
     "requiredPorts" : {
       "web" :{

@@ -57,7 +57,14 @@
       {{status}}
       {{#if running}}
         <!-- docker uptime -->
-        <br /><a href={{url}}>{{url}}</a>
+        <!-- <br /><a href={{url}}>{{url}}</a> -->
+        <br/>{{uptime}}<br />
+        {{#each objectToPairs stack}}
+          <b>{{key}}</b><br />
+          {{#each value}}
+            <a href={{url this}}>{{url this}}</a><br />
+          {{/each}}
+        {{/each}}
       {{/if}}
     </td>
   </tr>
