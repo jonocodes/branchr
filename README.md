@@ -13,15 +13,15 @@ A continuous delivery pipeline for running git branches of a web service.
 
 Make sure you can run docker without sudo.
 
-Checkout the git project(s) from github and then set the values
+Checkout some git project(s) from github and create a settings.json
 
 Start the project with
-`meteor --settings settings.json`
+`./run.sh`
 
 ## TODO
 
-* listen for git changes and update
+* queue found git changes so builds dont fall over eachother
 * allow config to check for branches and commits locally or remotely
-* enable/disable branches
-* show dates for git and docker run
-* style list
+* show dates/uptime for git and docker run
+* growl git updates?
+* style it!
