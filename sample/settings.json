@@ -2,16 +2,15 @@
   "public": {
     "serviceName": "Test App",
     "localGitDir": "/home/jono/files/lcd-test-app",
-    "dockerComposeFile": "sample/docker-compose.yml",
+    "dockerComposeFile": "/home/jono/files/branchr/sample/docker-compose.yml",
 
     "requiredPorts" : {
-      "web" :{
-        "WEB_PORT": 0,
-        "PORT_HTTP_WEB": 0
-      },
-      "redis" : {
-        "PORT_TCP_REDIS": 0
-      }
+      "web" : [
+        "PORT_HTTP_WEB"
+      ],
+      "redis" : [
+        "PORT_TCP_REDIS"
+      ]
     }
   }
 }

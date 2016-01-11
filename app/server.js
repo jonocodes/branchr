@@ -1,87 +1,11 @@
-
-var serviceName = Meteor.settings.public.serviceName;
-var localGitDir = Meteor.settings.public.localGitDir;
-var host = 'localhost';
-// TODO: toggle listening local or remote (default)
-
-Branches = new Mongo.Collection("branches");
-
-Logger.setLevel('trace');
-var log = new Logger('app');
-
-if (Meteor.isClient) {
-
-  Meteor.startup(function () {
-
-    document.title = "Branchr ["+ serviceName +"]";
-
-    log.info("starting client");
-
-    setInterval(function () {
-      Meteor.call("getServerTime", function (error, result) {
-        Session.set("time", result);
-      });
-    }, 2000);
-
-  });
-
-  Template.body.helpers({
-    time: function() {
-      return Session.get("time");
-    },
-    serviceName: function() {
-      return serviceName;
-    },
-    branches: function() {
-      return Branches.find({});
-    },
-    log: function() {
-      return Branches.find({branch:Session.get('currentBranch')});
-    }
-  });
-
-  Template.branchrow.helpers({
-    url: function() {
-      var protocol = 'http';
-      return protocol + '://' + host + ':' + this.port;
-    },
-    isWatching: function() {
-      return this.watching !== undefined && this.watching;
-    }
-  });
-
-  Template.branchrow.events({
-    'click button.start': function(event, template) {
-      log.info('start ' + template.data['branch']);
-      Session.set('currentBranch', template.data['branch']);
-      Meteor.call('startStack', template.data, function(error, result) {
-        if (error)
-          log.error(error);
-      });
-    },
-    'click button.stop': function(event, template) {
-      log.info('stop ' + template.data['branch']);
-      Session.set('currentBranch', template.data['branch']);
-      Meteor.call('stopStack', template.data);
-    },
-    'click button.log': function(event, template) {
-      log.info('toggle log view ' + template.data['branch']);
-      Session.set('currentBranch', template.data['branch']);
-    },
-    'change input.watchbox': function(event, template) {
-      log.info('toggle watch ' + template.data['branch']);
-      Meteor.call('toggleWatch', template.data['branch'], event.target.checked);
-    }
-  });
-
-}
-
 if (Meteor.isServer) {
 
   var Future = Npm.require('fibers/future');
   const spawn = Npm.require('child_process').spawn;
 
-  var baseImage = dockerNamify(serviceName);
+  const baseImage = dockerNamify(conf.serviceName);
+
+  const dockerCompose = "docker-compose -f " + conf.dockerComposeFile;
 
   // const exec = Npm.require('child_process').exec;
   // var Git = Meteor.npmRequire('nodegit');    // slow startup
@@ -108,7 +32,7 @@ if (Meteor.isServer) {
 
     log.info('checking for updates in ' + branchName);
     command = spawn('sh', ['-c',
-    "git --git-dir=" + localGitDir + "/.git pull"]);
+    "git --git-dir=" + conf.localGitDir + "/.git pull"]);
 
     command.stdout.on('data', function (data) {
       future.return(data);
@@ -128,7 +52,7 @@ if (Meteor.isServer) {
 
       // TODO: queue up instead of calling immediately?
 
-      Meteor.call('startStack', branchInDb);
+      Meteor.call('startStack', branchInDb, "automatic");
     }
 
     return false;
@@ -139,7 +63,7 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae'"]);
+    "git --git-dir=" + conf.localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae'"]);
 
     command.stdout.on('data', function (data) {
       var commit = (''+data).trim().split("\n");
@@ -158,7 +82,6 @@ if (Meteor.isServer) {
       log.error("stderr: " + data);
     });
 
-
     return future.wait();
   }
 
@@ -167,7 +90,7 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + localGitDir + "/.git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
+    "git --git-dir=" + conf.localGitDir + "/.git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
       var branchNames = (''+data).trim().split("\n");
@@ -193,22 +116,35 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "docker ps --format '{{.Names}}\t{{.Ports}}' | grep _web_1 | sed 's/_web_1//' | sed 's/0.0.0.0://' | sed 's/->.*//'"]);
+    "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
 
     command.stdout.on('data', function (data) {
 
-      var branches = (''+data).trim().split('\n');
+      var containers = (''+data).trim().split('\n');
 
-      var resultList = {};
-      branches.forEach(function(val, i) {
-        resultAssoc = {};
-        var exploded = val.split('\t');
-        resultAssoc['branch'] = exploded[0];
-        resultAssoc['port'] = exploded[1];
-        // resultAssoc['uptime'] = exploded[2];
-        resultList[exploded[0]] = resultAssoc;
+      var branches = {};
+      containers.forEach(function(line, i) {
+
+        var d = line.split('\t');
+        var split_name = d[0].substring(baseImage.length, d[0].length-2).split('_');
+        var branch = split_name[0];
+        var service = split_name[1];
+        var uptime = d[1];
+        var ports = [];
+
+        if (branches[branch] == undefined)
+          branches[branch] = { uptime: uptime, stack: {} };
+
+        d[2].split(',').forEach(function(p, i) {
+          ports.push(p.replace(/^[^:]+:(\d+).*$/, "$1"));
+        });
+
+        branches[branch]['stack'][service] = ports;
+
       });
-      future.return(resultList);
+      future.return(branches);
+
+      // log.debug('branches', branches);
     });
 
     command.stderr.on('data', function (data) {
@@ -235,7 +171,8 @@ if (Meteor.isServer) {
       if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
         val['running'] = false;
       } else {
-        val['port'] = runningBranches[dockerName]['port']
+        val['stack'] = runningBranches[dockerName]['stack'];
+        val['uptime'] = runningBranches[dockerName]['uptime'];
         val['running'] = true;
       }
     });
@@ -254,74 +191,101 @@ if (Meteor.isServer) {
     return name.toLowerCase().replace(/[^a-z0-9_]/g, "");
   }
 
-  function logCommand(command, b, actionStatus, successStatus) {
+  function logCommand(command, branch, actionStatus, closeCallback) {
 
-    Branches.update({ branch: b },{$set: { log:'' }});
+    Branches.update({ branch: branch }, {$set: { log:'' }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
-      log.debug(data.toString());
-      var body = Branches.findOne({branch:b});
-      Branches.update({ branch: b }, { $set :
-        { log: body['log'] + data, status: actionStatus}
+      Branches.update({ branch: branch }, { $set :
+        { log: Branches.findOne({branch:branch})['log'] + data,
+        status: actionStatus }
       });
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
-      log.error(data.toString());
-      var body = Branches.findOne({branch:b});
-      Branches.update({ branch: b }, { $set :
-        { log: body['log'] + data, status: actionStatus}
+      Branches.update({ branch: branch }, { $set :
+        { log: Branches.findOne({branch:branch})['log'] + data,
+        status: actionStatus }
       });
     }));
 
     command.on('close', Meteor.bindEnvironment( function(code) {
-      var body = Branches.findOne({branch:b});
-      Branches.update({ branch: b }, { $set :
-        { log: body['log'] + "\n= DONE =", status: successStatus}
-      });
-      // TODO: force refresh here instead of waiting
+      closeCallback();
     }));
   }
 
   Meteor.methods({
 
-    startStack: function(branch) {
-      // startStack(branch);
+    startStack: function(branch, triggered) {
       var b = branch['branch'];
-      var port = getUnusedPort();
       var image = baseImage + ':' + b;
+      var stack = {};
+      var envs = {  IMAGE: image  }
 
-      log.info("starting stack " + b + " port: " + port);
-
-      var envs = {
-        WEB_PORT: port,
-        // HTTP_PORT: port,
-        IMAGE: image
+      for (var service in conf.requiredPorts) {
+        stack[service] = {};
+        conf.requiredPorts[service].forEach(function(name, i) {
+          stack[service][name] = getUnusedPort();
+          envs[name] = stack[service][name];
+        });
       }
 
+      log.info("starting stack " + b, stack);
+
       command = spawn('sh', ['-cx', [
-        "cd " + localGitDir,
+        "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
         "git pull",
-        "cd " + localGitDir,
+        "cd " + conf.localGitDir,
         "docker build -t $IMAGE .",
-        "docker-compose -p " + b + " stop",
-        "docker-compose -p " + b + " up -d"
+        dockerCompose + " -p " + baseImage + b + " stop",
+        dockerCompose + " -p " + baseImage + b + " up -d"
       ].join(' && ')], { env: envs });
 
-      logCommand(command, b, "starting...", "running");
+      logCommand(command, b, "starting...", function() {
+        Branches.update({ branch: b }, { $set : {
+          log: Branches.findOne({branch:b})['log'] + "\n= DONE =",
+          stack: stack,
+          status: "running",
+          running: true, // TODO: check running in docker instead
+          triggered: triggered
+        }});
+      });
+
     },
 
     stopStack: function(branch) {
       var b = branch['branch'];
-      var port = branch['port'];
+      var stack = branch['stack'];
+
+      var envs = {
+        IMAGE: baseImage + ':' + b
+      }
+
+      for (var service in stack) {
+        for (var name in stack[service]) {
+          var port = stack[service][name];
+          envs[name] = port;
+        }
+      }
+
+      // log.debug('envs', envs);
 
       command = spawn('sh', ['-cx', [
-        "cd " + localGitDir,
-        "docker-compose -p " + b + " stop"
-      ].join(' && ')], { env: {WEB_PORT: port}});
+        "cd " + conf.localGitDir,
+        dockerCompose + " -p " + baseImage + b + " stop"
+      ].join(' && ')], { env: envs });
 
-      logCommand(command, b, "stopping...", "stopped");
+      logCommand(command, b, "stopping...", function() {
+        Branches.update({ branch: b }, { $set : {
+          log: Branches.findOne({branch:b})['log'] + "\n= DONE =",
+          stack: {},
+          uptime: null,
+          status: "stopped",
+          running: false, // TODO: check running in docker instead
+          triggered: null
+        }});
+      });
     },
 
     toggleWatch: function(branchName, watch) {
@@ -358,18 +322,16 @@ if (Meteor.isServer) {
 
     setInterval(Meteor.bindEnvironment( function() {
 
-      // listen for new/old patches
+      // listen for new/old branches
       var branches = getAllBranches();
 
       branches.forEach(function(val, i) {
 
         Branches.update({ branch: val['branch'] }, { $set:{
           running: val['running'],
-          port: val['port'],
-          // lastCommit: getLastCommit(val['name'])  // might not be same as running?
-        //  status: status
-        }},
-        { upsert : true });
+          uptime: val['uptime'],
+          lastCommit: getLastCommit(val['branch'])  // might not be same as running?
+        }});
 
       });
 

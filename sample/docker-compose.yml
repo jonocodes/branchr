@@ -1,0 +1,12 @@
+web:
+  image: $IMAGE
+  ports:
+   - $PORT_HTTP_WEB:5000
+  # volumes:
+  #  - .:/code
+  links:
+   - redis
+redis:
+  ports:
+    - $PORT_TCP_REDIS:6379
+  image: redis
