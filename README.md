@@ -7,7 +7,8 @@ A continuous delivery pipeline for running git branches of a web service.
 * docker-compose
 * MeteorJS
 * git
-* an app to run (preferably 12 factor)
+
+The app you want to run should be managed by git, have a Docker image for it and a compose file. Compose file needs to have environment variables for ports.
 
 ## Usage
 
@@ -17,6 +18,8 @@ Checkout some git project(s) from github and create a settings.json
 
 Start the project with
 `./run.sh`
+
+Visit http://localhost:3000
 
 ## TODO
 

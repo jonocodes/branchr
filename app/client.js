@@ -34,6 +34,20 @@ if (Meteor.isClient) {
       var protocol = 'http';
       return protocol + '://' + host + ':' + port;
     },
+    address: function(name, port) { //PORT_HTTP_WEB
+
+      var protocol = '';
+
+      if (name.indexOf('PORT_HTTP_') == 0)
+        protocol = 'http://';
+      else if (name.indexOf('PORT_HTTPS_') == 0)
+        protocol = 'https://';
+
+      return protocol + host + ':' + port;
+    },
+    isLink: function(name) {
+      return (name.indexOf('PORT_HTTP') == 0);
+    },
     isWatching: function() {
       return this.watching !== undefined && this.watching;
     }
@@ -52,7 +66,7 @@ if (Meteor.isClient) {
     'click button.start': function(event, template) {
       log.info('start ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
-      Meteor.call('startStack', template.data, function(error, result) {
+      Meteor.call('startStack', template.data, "manual", function(error, result) {
         if (error)
           log.error(error);
       });

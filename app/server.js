@@ -52,7 +52,7 @@ if (Meteor.isServer) {
 
       // TODO: queue up instead of calling immediately?
 
-      Meteor.call('startStack', branchInDb);
+      Meteor.call('startStack', branchInDb, "automatic");
     }
 
     return false;
@@ -125,18 +125,11 @@ if (Meteor.isServer) {
       var branches = {};
       containers.forEach(function(line, i) {
 
-        // log.debug("running line", line);
-
         var d = line.split('\t');
-
         var split_name = d[0].substring(baseImage.length, d[0].length-2).split('_');
-
-        // log.debug('split_name', split_name);
-
         var branch = split_name[0];
         var service = split_name[1];
         var uptime = d[1];
-
         var ports = [];
 
         if (branches[branch] == undefined)
@@ -146,15 +139,12 @@ if (Meteor.isServer) {
           ports.push(p.replace(/^[^:]+:(\d+).*$/, "$1"));
         });
 
-        // log.debug('ports', ports);
-
         branches[branch]['stack'][service] = ports;
 
       });
       future.return(branches);
 
-      log.debug('branches', branches);
-
+      // log.debug('branches', branches);
     });
 
     command.stderr.on('data', function (data) {
@@ -226,7 +216,7 @@ if (Meteor.isServer) {
 
   Meteor.methods({
 
-    startStack: function(branch) {
+    startStack: function(branch, triggered) {
       var b = branch['branch'];
       var image = baseImage + ':' + b;
       var stack = {};
@@ -257,7 +247,8 @@ if (Meteor.isServer) {
           log: Branches.findOne({branch:b})['log'] + "\n= DONE =",
           stack: stack,
           status: "running",
-          running: true // TODO: check running in docker instead
+          running: true, // TODO: check running in docker instead
+          triggered: triggered
         }});
       });
 
@@ -278,7 +269,7 @@ if (Meteor.isServer) {
         }
       }
 
-      log.debug('envs', envs);
+      // log.debug('envs', envs);
 
       command = spawn('sh', ['-cx', [
         "cd " + conf.localGitDir,
@@ -291,7 +282,8 @@ if (Meteor.isServer) {
           stack: {},
           uptime: null,
           status: "stopped",
-          running: false // TODO: check running in docker instead
+          running: false, // TODO: check running in docker instead
+          triggered: null
         }});
       });
     },

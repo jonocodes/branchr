@@ -14,7 +14,7 @@
 
   <table>
     <tr><th>branch</th><th>last commit</th><th>actions</th>
-      <th>watch</th><th>status</th></tr>
+      <th>watch</th><th>status</th><th>stack</th></tr>
     {{#each branches}}
       {{> branchrow}}
     {{/each}}
@@ -44,31 +44,43 @@
       {{else}}
         <button class="start">start</button>
       {{/if}}
-
-      <!-- <button class="enable">enable</button>
-      <button class="disable">disable</button> -->
-
       <button class="log">log</button>
     </td>
     <td>
       <input type="checkbox" class="watchbox" checked="{{isWatching}}">
     </td>
     <td>
-      {{status}}<br />
+      {{#if triggered}}
+        {{triggered}} trigger<br/>
+      {{/if}}
       {{#if running}}
-        <br/>{{uptime}}<br />
+        {{uptime}}
+      {{else}}
+        {{status}}
+      {{/if}}
+    </td>
+    <td>
+      {{#if running}}
         {{#each objectToPairs stack}}
-          <b>{{key}}</b><br />
+          <b>{{key}}</b>
+          <ul>
           {{#each objectToPairs value}}
-            {{key}} : <a href={{url value}}>{{url value}}</a><br />
-            <!-- <a href={{url this}}>{{url this}}</a><br /> -->
+            <li>
+              {{#if isLink key}}
+                <a href={{address key value}}>{{address key value}}</a>
+              {{else}}
+                {{address key value}}
+              {{/if}}
+            </li>
           {{/each}}
+          </ul>
         {{/each}}
+      {{else}}
+        -
       {{/if}}
     </td>
   </tr>
 </template>
-
 
 <template name="logarea">
   Branch: {{branch}}
