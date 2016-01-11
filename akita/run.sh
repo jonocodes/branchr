@@ -1,3 +1,3 @@
 #!/bin/sh
 
-cd ../app && meteor --settings ../akita/settings-akita.json --raw-logs 
+cd ../app && meteor --settings ../akita/settings-akita.json --raw-logs

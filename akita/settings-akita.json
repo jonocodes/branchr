@@ -2,6 +2,7 @@
   "public": {
     "serviceName": "Akita",
     "localGitDir": "/home/jfinger/src/akita",
+    "dockerBuildDir" : "/home/jfinger/src/Dockerfiles",
     "dockerComposeFile": "/home/jfinger/src/branchr/akita/akita_nedapi_nedcas.yml",
 
     "requiredPorts" : {

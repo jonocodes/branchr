@@ -31,7 +31,7 @@ if (Meteor.isServer) {
     var future = new Future();
 
     log.info('checking for updates in ' + branchName);
-    command = spawn('sh', ['-c',
+    command = spawn('sh', ['-cx',
     "git --git-dir=" + conf.localGitDir + "/.git pull"]);
 
     command.stdout.on('data', function (data) {
@@ -234,12 +234,14 @@ if (Meteor.isServer) {
 
       log.info("starting stack " + b, stack);
 
-      command = spawn('sh', ['-cx', [
+      var command = spawn('sh', ['-cx', [
+        // "ssh -T git@github.com",
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
-        "git pull",
-        "cd " + conf.localGitDir,
-        "docker build -t $IMAGE .",
+        // "git pull",
+        "cd " + conf.dockerBuildDir,
+        "projects/named-entity.service/build-image.sh",
+        // "docker build -t $IMAGE .",
         dockerCompose + " -p " + baseImage + b + " stop",
         dockerCompose + " -p " + baseImage + b + " up -d"
       ].join(' && ')], { env: envs });
