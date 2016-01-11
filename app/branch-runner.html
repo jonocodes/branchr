@@ -1,11 +1,13 @@
 <head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
   <title>Branchr</title>
 </head>
 
 <body>
   <!-- <h1>Branchr</h1> -->
 
-  <div class="time">
+  <div class="right">
     Server time: {{time}}
     <!-- <br />Repo: Local -->
   </div>
@@ -39,20 +41,26 @@
       </div>
     </td>
     <td>
-      {{#if running}}
-        <button class="stop">stop</button>
+
+      <button class="log"><i class="fa fa-book {{#if isLogging branch}}fa-rotate-90{{/if}}"></i></button>
+
+      {{#if isWorking status}}
+        <button class="stop"><i class="fa fa-spinner fa-spin"></i></button>
       {{else}}
-        <button class="start">start</button>
+        {{#if running}}
+          <button class="stop"><i class="fa fa-stop"></i></button>
+        {{else}}
+          <button class="start"><i class="fa fa-play"></i></button>
+        {{/if}}
       {{/if}}
-      <button class="log">log</button>
     </td>
-    <td>
+    <td class="center">
       <input type="checkbox" class="watchbox" checked="{{isWatching}}">
     </td>
     <td>
-      {{#if triggered}}
-        {{triggered}} trigger<br/>
-      {{/if}}
+      <!-- {{#if triggered}}
+        triggered {{triggered}}<br/>
+      {{/if}} -->
       {{#if running}}
         {{uptime}}
       {{else}}
@@ -83,7 +91,11 @@
 </template>
 
 <template name="logarea">
-  Branch: {{branch}}
+  Branch: {{branch}}<br/>
+  <!-- {{#if triggered}} -->
+    Triggered: {{triggered}} <!-- {{startTime}} --><br/>
+  <!-- {{/if}} -->
+  Time: {{time}}
   <pre>{{log}}</pre>
-  <!-- <pre id="errors">{{errors}}</pre> -->
+
 </template>

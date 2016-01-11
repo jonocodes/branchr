@@ -52,7 +52,7 @@ if (Meteor.isServer) {
 
       // TODO: queue up instead of calling immediately?
 
-      Meteor.call('startStack', branchInDb, "automatic");
+      Meteor.call('startStack', branchInDb, "automatically");
     }
 
     return false;
@@ -248,7 +248,8 @@ if (Meteor.isServer) {
           stack: stack,
           status: "running",
           running: true, // TODO: check running in docker instead
-          triggered: triggered
+          triggered: triggered,
+          time: (new Date).toTimeString()
         }});
       });
 
@@ -264,8 +265,7 @@ if (Meteor.isServer) {
 
       for (var service in stack) {
         for (var name in stack[service]) {
-          var port = stack[service][name];
-          envs[name] = port;
+          envs[name] = stack[service][name];
         }
       }
 
@@ -281,9 +281,10 @@ if (Meteor.isServer) {
           log: Branches.findOne({branch:b})['log'] + "\n= DONE =",
           stack: {},
           uptime: null,
-          status: "stopped",
+          status: 'stopped',
           running: false, // TODO: check running in docker instead
-          triggered: null
+          triggered: 'manually', //null,
+          time: (new Date).toTimeString()
         }});
       });
     },

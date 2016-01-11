@@ -22,7 +22,11 @@ td, th {
   /*vertical-align: top;*/
 }
 
-.time {
+td.center {
+  text-align: center;
+}
+
+.right {
   float: right;
 }
 
@@ -34,7 +38,17 @@ td, th {
   color: grey;
 }
 
+/*.fa-spinner {
+  margin-left: 4px;
+}*/
+
 ul {
   padding-left: 26px;
   margin: 0;
+}
+
+button {
+  background-color:transparent;
+  border:none;
+  /*color:#333333;*/
 }

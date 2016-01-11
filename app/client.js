@@ -12,6 +12,13 @@ if (Meteor.isClient) {
       });
     }, 2000);
 
+    // setInterval(function() {
+    //   if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight) {
+    //     // you're at the bottom of the page
+    //     window.scrollTo(0,document.body.scrollHeight);
+    //   }
+    // }, 1000);
+
   });
 
   Template.body.helpers({
@@ -30,12 +37,7 @@ if (Meteor.isClient) {
   });
 
   Template.branchrow.helpers({
-    url: function(port) {
-      var protocol = 'http';
-      return protocol + '://' + host + ':' + port;
-    },
-    address: function(name, port) { //PORT_HTTP_WEB
-
+    address: function(name, port) {
       var protocol = '';
 
       if (name.indexOf('PORT_HTTP_') == 0)
@@ -48,6 +50,12 @@ if (Meteor.isClient) {
     isLink: function(name) {
       return (name.indexOf('PORT_HTTP') == 0);
     },
+    isLogging: function(branch) {
+      return (Session.get('currentBranch') == branch);
+    },
+    isWorking: function(status) {
+      return (status.indexOf('...') > -1);
+    },
     isWatching: function() {
       return this.watching !== undefined && this.watching;
     }
@@ -55,10 +63,7 @@ if (Meteor.isClient) {
 
   Template.registerHelper("objectToPairs",function(object){
     return _.map(object, function(value, key) {
-      return {
-        key: key,
-        value: value
-      };
+      return {  key: key,  value: value  };
     });
   });
 
@@ -66,7 +71,7 @@ if (Meteor.isClient) {
     'click button.start': function(event, template) {
       log.info('start ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
-      Meteor.call('startStack', template.data, "manual", function(error, result) {
+      Meteor.call('startStack', template.data, "manually", function(error, result) {
         if (error)
           log.error(error);
       });
@@ -77,7 +82,7 @@ if (Meteor.isClient) {
       Meteor.call('stopStack', template.data);
     },
     'click button.log': function(event, template) {
-      log.info('toggle log view ' + template.data['branch']);
+      // log.info('toggle log view ' + template.data['branch']);
       Session.set('currentBranch', template.data['branch']);
     },
     'change input.watchbox': function(event, template) {
