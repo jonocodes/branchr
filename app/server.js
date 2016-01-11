@@ -164,6 +164,9 @@ if (Meteor.isServer) {
     var allBranches = getRemoteBranches();
     var runningBranches = getRunningBranches();
 
+    log.info("remote branches: " + allBranches.length +
+      "  running branches: " + getRunningBranches.length);
+
     allBranches.forEach(function(val, i) {
 
       var dockerName = dockerNamify(val['branch']);
@@ -177,7 +180,6 @@ if (Meteor.isServer) {
       }
     });
 
-    log.info("branch count: " + allBranches.length);
     return allBranches;
   }
 
@@ -306,6 +308,8 @@ if (Meteor.isServer) {
 
     // Branches.remove({});
 
+    // first pass on DB at startup for cleaning purposes?
+    // is this ever getting called?
     Meteor.bindEnvironment( function() {
       var branches = getAllBranches();
 
@@ -319,6 +323,7 @@ if (Meteor.isServer) {
         { upsert : true });
 
       });
+
     });
 
     setInterval(Meteor.bindEnvironment( function() {
@@ -327,12 +332,12 @@ if (Meteor.isServer) {
       var branches = getAllBranches();
 
       branches.forEach(function(val, i) {
-
         Branches.update({ branch: val['branch'] }, { $set:{
           running: val['running'],
           uptime: val['uptime'],
           lastCommit: getLastCommit(val['branch'])  // might not be same as running?
-        }});
+        }},
+        { upsert : true });
 
       });
 
