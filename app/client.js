@@ -29,7 +29,7 @@ if (Meteor.isClient) {
       return conf.serviceName;
     },
     branches: function() {
-      return Branches.find({ app: conf.serviceName });
+      return Branches.find({ app: conf.serviceName });  // TODO: sort by commit
     },
     log: function() {
       return Branches.find({branch:Session.get('currentBranch')});
@@ -54,7 +54,7 @@ if (Meteor.isClient) {
       return (Session.get('currentBranch') == branch);
     },
     isWorking: function(status) {
-      return (status.indexOf('...') > -1);
+      return (status && status.indexOf('...') > -1);
     },
     isWatching: function() {
       return this.watching !== undefined && this.watching;
