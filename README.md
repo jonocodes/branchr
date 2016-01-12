@@ -2,6 +2,8 @@
 
 A continuous delivery pipeline for running git branches of a web service.
 
+![Screenshot](screenshot.png)
+
 ## Requirements
 * Docker
 * docker-compose
@@ -30,4 +32,5 @@ Visit http://localhost:3000
 * parse compose file instead of setting ports in config
 * show when git last commit is different then the last deployed checksum
 * growl git updates?
-* style it!
+* style it with grid and widgets
+* Dockerize branchr!
