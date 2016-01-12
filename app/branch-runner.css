@@ -1,6 +1,6 @@
 body {
-  background-color: black;
-  color: white;
+  /*background-color: black;
+  color: white;*/
 }
 
 a {
@@ -50,5 +50,4 @@ ul {
 button {
   background-color:transparent;
   border:none;
-  /*color:#333333;*/
 }

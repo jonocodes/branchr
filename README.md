@@ -16,8 +16,8 @@ Make sure you can run docker without sudo.
 
 Checkout some git project(s) from github and create a settings.json
 
-Start the project with
-`./run.sh`
+Start the sample project with
+`cd sample && ./run.sh`
 
 Visit http://localhost:3000
 

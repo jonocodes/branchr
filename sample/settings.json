@@ -1,8 +1,11 @@
 {
   "public": {
     "serviceName": "Test App",
-    "localGitDir": "/home/jono/files/lcd-test-app",
-    "dockerComposeFile": "/home/jono/files/branchr/sample/docker-compose.yml",
+    "localGitDir": "/home/jono/src/lcd-test-app",
+    "dockerBuildDir" : "/home/jono/src/lcd-test-app",
+    "dockerComposeFile": "/home/jono/src/branchr/sample/docker-compose.yml",
+    "dockerBuildCmd": "docker build -t $IMAGE .",
+    "host": "localhost",
 
     "requiredPorts" : {
       "web" : [

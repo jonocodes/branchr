@@ -1,0 +1,27 @@
+{
+  "public": {
+    "serviceName": "Akita",
+    "localGitDir": "/home/jono/src/akita",
+    "dockerBuildDir" : "/home/jono/src/Dockerfiles",
+    "dockerComposeFile": "/home/jono/src/branchr/akita/akita_nedapi_nedcas.yml",
+    "dockerBuildCmd": "projects/named-entity.service/build-image.sh",
+    "host": "localhost",
+
+    "requiredPorts" : {
+      "akita" : [
+        "PORT_HTTP_AKITA",
+        "PORT_HTTPS_AKITA"
+      ],
+      "mailcatcher" : [
+        "PORT_HTTP_MAILCATCHER"
+      ],
+      "nedcas" : [
+        "PORT_HTTPS_CAS"
+      ],
+      "nedapi": [
+        "PORT_HTTP_NED",
+        "PORT_HTTPS_NED"
+      ]
+    }
+  }
+}

@@ -1,0 +1,75 @@
+akita:
+  image: $IMAGE
+  ports:
+    - ${PORT_HTTP_AKITA}:80
+    - ${PORT_HTTPS_AKITA}:443
+  links:
+    - nedapi:nedapi
+    - mailcatcher:mailcatcher
+    - nedcas:nedcas
+  environment:
+    - NED_SERVICE=http://nedapi:8080/v0
+    - MAILER_ADDRESS=mailcatcher
+    - NED_USERAPP=dev
+    - NED_PASSWORD=dev
+    - CAS_URL=https://localhost:${PORT_HTTPS_CAS}
+    - CAS_URL_INTERNAL=https://nedcas:8443
+    - SECRET_KEY_BASE=secretgoeshere
+    - SSL=generatekeys  # options = none, existingkeys, generatekeys
+  # volumes:    # when using SSL=existingkeys
+  #   - /etc/nginx/ssl/nginx.key:/etc/nginx/ssl/nginx.key:ro
+  #   - /etc/nginx/ssl/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
+    - EXACTTARGET_ID=
+    - EXACTTARGET_SECRET=
+    - SALESFORCE_HOST=
+    - SALESFORCE_CLIENT_ID=
+    - SALESFORCE_CLIENT_SECRET=
+    - SALESFORCE_USERNAME=
+    - SALESFORCE_PASSWORD=
+    - SALESFORCE_CONSUMER_APP=
+    - SALESFORCE_CONSUMER_PASSWORD=
+    - MOODLE_TOKEN=
+
+mailcatcher:
+  image: mailcatcher
+  ports:
+    - ${PORT_HTTP_MAILCATCHER}:1080
+
+nedcas:
+  image: nedcas:develop
+  links:
+    - neddb:neddb
+    - nedapi:nedapi
+  ports:
+    - ${PORT_HTTPS_CAS}:8443
+  environment:
+    - MYSQL_ROOT_PASSWORD=root
+    - MYSQL_USER=ned
+    - MYSQL_USER_PASSWORD=ned
+    - MYSQL_HOSTNAME=neddb
+    - MYSQL_DATABASE=namedEntities
+    - NED_SERVICE=https://nedapi:8443/v0
+    - REGISTRATION_BASE_URL=https://localhost   # TODO: fix this
+
+nedapi:
+  image: nedapi:develop
+  ports:
+    - ${PORT_HTTP_NED}:8080
+    - ${PORT_HTTPS_NED}:8443
+  links:
+    - neddb:neddb
+  environment:
+    - MYSQL_ROOT_PASSWORD=root
+    - MYSQL_USER=ned
+    - MYSQL_USER_PASSWORD=ned
+    - MYSQL_HOSTNAME=neddb
+    - MYSQL_DATABASE=namedEntities
+    - AMBRA_DATABASE=ambra
+    - RINGGOLD_DATABASE=ringgold
+
+neddb:
+  image: percona:5.6
+  environment:
+    - MYSQL_ROOT_PASSWORD=root
+  # volumes:    # to persist database between runs
+  #   - /var/lib/mysql
