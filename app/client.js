@@ -32,7 +32,8 @@ if (Meteor.isClient) {
       return Branches.find({ app: conf.serviceName });  // TODO: sort by commit
     },
     log: function() {
-      return Branches.find({branch:Session.get('currentBranch')});
+      return Branches.find({
+        branch:Session.get('currentBranch'), app: conf.serviceName });
     }
   });
 

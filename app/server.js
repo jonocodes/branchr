@@ -217,7 +217,7 @@ if (Meteor.isServer) {
         // "ssh -T git@github.com", // ssh-agent -l
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
-        "git pull",
+        // "git pull",
         "cd " + conf.dockerBuildDir,
         conf.dockerBuildCmd,
         // "projects/named-entity.service/build-image.sh",
