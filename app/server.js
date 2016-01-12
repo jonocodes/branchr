@@ -4,28 +4,7 @@ if (Meteor.isServer) {
   const spawn = Npm.require('child_process').spawn;
 
   const baseImage = dockerNamify(conf.serviceName);
-
   const dockerCompose = "docker-compose -f " + conf.dockerComposeFile;
-
-  // const exec = Npm.require('child_process').exec;
-  // var Git = Meteor.npmRequire('nodegit');    // slow startup
-
-  // function getRemoteBranchesGit() {  // TODO: get nexted then's to work
-  //   // log.info('getRemoteBranchesGit');
-  //   Git.Repository.open(localGitDir + "/.git").then(function(repository) {
-  //     log.info(repository);
-  //
-  //     Git.Branch.iteratorNew(repository, GIT_BRANCH_LOCAL).then(function(branchIterator) {
-  //       log.info('branchIterator : ' + branchIterator);
-  //
-  //       for(let value of branchIterator){
-  //         log.info("I " + value)
-  //       }
-  //     });
-  //
-  //   });
-  // }
-
 
   function checkForUpdate(branchName, branchInDb) {
     var future = new Future();
