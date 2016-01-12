@@ -29,7 +29,7 @@ if (Meteor.isClient) {
       return conf.serviceName;
     },
     branches: function() {
-      return Branches.find({});
+      return Branches.find({ app: conf.serviceName });
     },
     log: function() {
       return Branches.find({branch:Session.get('currentBranch')});

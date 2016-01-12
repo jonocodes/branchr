@@ -2,6 +2,9 @@
 conf = Meteor.settings.public;
 
 host = 'localhost'; // docker host
+if (conf.host)
+  host = conf.host
+
 // TODO: toggle listening local or remote (default)
 
 Logger.setLevel('trace');
