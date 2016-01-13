@@ -1,4 +1,4 @@
-# branchr
+# Branchr
 
 A continuous delivery pipeline for running git branches of a web service.
 

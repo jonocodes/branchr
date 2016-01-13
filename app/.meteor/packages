@@ -25,4 +25,4 @@ insecure                # Allow all DB writes from clients (for prototyping)
 # packages.json : { "nodegit": "0.6.3" }
 jparker:crypto-md5
 jag:pince
-twbs:bootstrap
+#twbs:bootstrap
