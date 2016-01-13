@@ -6,9 +6,62 @@ if (Meteor.isServer) {
   const baseImage = dockerNamify(conf.serviceName);
   const dockerCompose = "docker-compose -f " + conf.dockerComposeFile;
 
+  const minPort = 5000;
+  const maxPort = 7000;
+
+
+  var net = Npm.require('net');
+
+  var random_port = function() {
+    var cb,
+        opts = {};
+
+    if (arguments.length == 0) {
+        throw "no callback";
+    }
+    else if (arguments.length == 1) {
+        cb = arguments[0];
+    }
+    else {
+        opts = arguments[0];
+        cb = arguments[arguments.length - 1];
+    }
+
+    if (typeof cb != 'function') {
+        throw "callback is not a function";
+    }
+
+    if (typeof opts != 'object') {
+        throw "options is not a object";
+    }
+
+    var from = opts.from > 0 ? opts.from : 15000,
+        range = opts.range > 0 ? opts.range : 100,
+        port = from + ~~(Math.random() * range);
+
+    var server = net.createServer();
+    server.listen(port, function (err) {
+        server.once('close', function () {
+            cb(port);
+        });
+        server.close();
+    });
+    server.on('error', function (err) {
+        random_port(opts, cb);
+    });
+  }
+
   function getUnusedPort() {
     // TODO: check if port is used
-    return Math.floor(Math.random() * (7000 - 5000)) + 5000;
+    // let port = Math.floor(Math.random() * (maxPort - minPort)) + minPort;
+    // return port;
+
+    var future = new Future();
+    random_port({from: maxPort, range: 1000}, function(port){
+      // TODO: limit number of tries
+      future.return(port)
+    });
+    return future.wait();
   }
 
   function dockerNamify(name) {
@@ -185,7 +238,7 @@ if (Meteor.isServer) {
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
-      log.error(data.toString());
+      // log.error(data.toString());
       Branches.update(br, { $set :
         { log: Branches.findOne(br)['log'] + data, status: actionStatus } });
     }));
