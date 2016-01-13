@@ -29,11 +29,20 @@ if (Meteor.isClient) {
       return conf.serviceName;
     },
     branches: function() {
-      return Branches.find({ app: conf.serviceName });  // TODO: sort by commit
+      return Branches.find({ app: conf.serviceName },
+        {sort: { "lastCommit.date" : -1 }});
     },
     log: function() {
       return Branches.find({
-        branch:Session.get('currentBranch'), app: conf.serviceName });
+        branch: Session.get('currentBranch'), app: conf.serviceName });
+    }
+  });
+
+  Template.logarea.helpers({
+    isWorking: function() {
+      var status = (Branches.find({
+        branch: Session.get('currentBranch'), app: conf.serviceName }).fetch())[0].status;
+      return (status && status.indexOf('...') > -1);
     }
   });
 

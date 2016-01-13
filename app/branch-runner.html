@@ -35,7 +35,7 @@
     <td>
       <div class="commit">
       {{#with lastCommit}}
-        <img src={{gravatar}} width=15> <span class=checksum>{{checksum}}</span> {{date}}<br />
+        <img src={{gravatar}} width=15> <span class=checksum>{{checksum}}</span> {{dateRelative}}<br />
         {{title}}
       {{/with}}
       </div>
@@ -92,10 +92,13 @@
 
 <template name="logarea">
   Branch: {{branch}}<br/>
-  <!-- {{#if triggered}} -->
-    Triggered: {{triggered}} <!-- {{startTime}} --><br/>
-  <!-- {{/if}} -->
-  Time: {{time}}
+  {{#if triggered}}
+    Triggered: {{triggered}} at {{time}}<br/>
+  {{/if}}
   <pre>{{log}}</pre>
+
+  {{#if isWorking}}
+    <i class="fa fa-spinner fa-spin"></i> Running...<br />
+  {{/if}}
 
 </template>

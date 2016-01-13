@@ -6,6 +6,21 @@ if (Meteor.isServer) {
   const baseImage = dockerNamify(conf.serviceName);
   const dockerCompose = "docker-compose -f " + conf.dockerComposeFile;
 
+  function getUnusedPort() {
+    // TODO: check if port is used
+    return Math.floor(Math.random() * (7000 - 5000)) + 5000;
+  }
+
+  function dockerNamify(name) {
+    // turn into a name that is a valid for a docker container
+    return name.toLowerCase().replace(/[^a-z0-9_]/g, "");
+  }
+
+  // helper function to select a branch
+  function bs(name) {
+    return { branch: name, app: conf.serviceName};
+  }
+
   function checkForUpdate(branchName, branchInDb) {
     var future = new Future();
 
@@ -23,8 +38,8 @@ if (Meteor.isServer) {
 
     future.wait();
 
-    var lastCommit = getLastCommit(branchName);
-    var runningCommit = branchInDb['lastCommit'];
+    let lastCommit = getLastCommit(branchName);
+    let runningCommit = branchInDb['lastCommit'];
 
     if (lastCommit['checksum'] !== runningCommit['checksum']) {
       log.info('git was updated for ' + branchName);
@@ -42,17 +57,18 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + conf.localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae'"]);
+    "git --git-dir=" + conf.localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae%n%ai'"]);
 
     command.stdout.on('data', function (data) {
-      var commit = (''+data).trim().split("\n");
+      let commit = (''+data).trim().split("\n");
 
       future.return({
         checksum: commit[0],
         author: commit[1],
-        date: commit[2],
+        dateRelative: commit[2],
         title: commit[3],
         email: commit[4],
+        date: commit[5],
         gravatar: "https://www.gravatar.com/avatar/" + CryptoJS.MD5(commit[4]).toString()
       });
     });
@@ -72,7 +88,7 @@ if (Meteor.isServer) {
     "git --git-dir=" + conf.localGitDir + "/.git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
-      var branchNames = (''+data).trim().split("\n");
+      let branchNames = (''+data).trim().split("\n");
 
       var resultList = [];
       branchNames.forEach(function(val, i) {
@@ -99,17 +115,17 @@ if (Meteor.isServer) {
 
     command.stdout.on('data', function (data) {
 
-      var containers = (''+data).trim().split('\n');
+      let containers = (''+data).trim().split('\n');
 
-      var branches = {};
+      let branches = {};
       containers.forEach(function(line, i) {
 
-        var d = line.split('\t');
-        var split_name = d[0].substring(baseImage.length, d[0].length-2).split('_');
-        var branch = split_name[0];
-        var service = split_name[1];
-        var uptime = d[1];
-        var ports = [];
+        let d = line.split('\t');
+        let split_name = d[0].substring(baseImage.length, d[0].length-2).split('_');
+        let branch = split_name[0];
+        let service = split_name[1];
+        let uptime = d[1];
+        let ports = [];
 
         if (branches[branch] == undefined)
           branches[branch] = { uptime: uptime, stack: {} };
@@ -122,8 +138,6 @@ if (Meteor.isServer) {
 
       });
       future.return(branches);
-
-      // log.debug('branches', branches);
     });
 
     command.stderr.on('data', function (data) {
@@ -131,24 +145,23 @@ if (Meteor.isServer) {
     });
 
     command.on('close', function(code) {
-      if (!future.isResolved()) {
+      if (!future.isResolved())
         future.return({});
-      }
     });
 
     return future.wait();
   }
 
   function getAllBranches() {
-    var allBranches = getRemoteBranches();
-    var runningBranches = getRunningBranches();
+    let allBranches = getRemoteBranches();
+    let runningBranches = getRunningBranches();
 
     log.info("remote branches: " + allBranches.length +
       "  running branches: " + getRunningBranches.length);
 
     allBranches.forEach(function(val, i) {
 
-      var dockerName = dockerNamify(val['branch']);
+      let dockerName = dockerNamify(val['branch']);
 
       if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
         val['running'] = false;
@@ -162,48 +175,36 @@ if (Meteor.isServer) {
     return allBranches;
   }
 
-  function getUnusedPort() {
-    // TODO: check if port is used
-    return Math.floor(Math.random() * (7000 - 5000)) + 5000;
-  }
+  function logCommand(command, br, actionStatus, closeCallback) {
 
-  function dockerNamify(name) {
-    // turn into a name that is a valid for a docker container
-    return name.toLowerCase().replace(/[^a-z0-9_]/g, "");
-  }
-
-  function logCommand(command, branch, actionStatus, closeCallback) {
-
-    Branches.update({ branch: branch }, {$set: { log:'' }});
+    Branches.update( br, {$set: { log:'' }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
-      Branches.update({ branch: branch, app: conf.serviceName }, { $set :
-        { log: Branches.findOne({branch:branch, app: conf.serviceName})['log'] + data,
-        status: actionStatus }
-      });
+      Branches.update(br, { $set :
+        { log: Branches.findOne(br)['log'] + data, status: actionStatus } });
     }));
 
     command.stderr.on('data', Meteor.bindEnvironment( function(data) {
-      Branches.update({ branch: branch, app: conf.serviceName }, { $set :
-        { log: Branches.findOne({branch:branch, app: conf.serviceName})['log'] + data,
-        status: actionStatus }
-      });
+      log.error(data.toString());
+      Branches.update(br, { $set :
+        { log: Branches.findOne(br)['log'] + data, status: actionStatus } });
     }));
 
     command.on('close', Meteor.bindEnvironment( function(code) {
-      closeCallback();
+      closeCallback(code);
     }));
   }
 
   Meteor.methods({
 
     startStack: function(branch, triggered) {
-      var b = branch['branch'];
-      var image = baseImage + ':' + b;
-      var stack = {};
-      var envs = {  IMAGE: image  }
+      let b = branch['branch'];
+      let br = bs(b);
+      let image = baseImage + ':' + b;
+      let stack = {};
+      let envs = {  IMAGE: image  }
 
-      for (var service in conf.requiredPorts) {
+      for (let service in conf.requiredPorts) {
         stack[service] = {};
         conf.requiredPorts[service].forEach(function(name, i) {
           stack[service][name] = getUnusedPort();
@@ -217,42 +218,48 @@ if (Meteor.isServer) {
         // "ssh -T git@github.com", // ssh-agent -l
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
-        // "git pull",
+        // "git pull",       // TODO: only do if monitoring remote is specified
         "cd " + conf.dockerBuildDir,
         conf.dockerBuildCmd,
-        // "projects/named-entity.service/build-image.sh",
-        // "docker build -t $IMAGE .",
         dockerCompose + " -p " + baseImage + b + " stop",
         dockerCompose + " -p " + baseImage + b + " up -d"
       ].join(' && ')], { env: envs });
 
       // TODO: add spinner at bottom like teamcity
 
-      logCommand(command, b, "starting...", function() {
-        Branches.update({ branch: b, app: conf.serviceName }, { $set : {
-          log: Branches.findOne({branch:b, app: conf.serviceName})['log'] + "\n= DONE =",
-          stack: stack,
-          status: "running",
-          running: true, // TODO: check running in docker instead
-          triggered: triggered,
-          time: (new Date).toTimeString()
-        }});
+      logCommand(command, br, "starting...", function(returnCode) {
+        if (returnCode == 0)
+          Branches.update(br, { $set : {
+            log: Branches.findOne(br)['log'] + "\n= DONE =",
+            stack: stack,
+            status: "running",
+            running: true, // TODO: check running in docker instead
+            triggered: triggered, // TODO: set this at start, not finish
+            time: (new Date).toTimeString()
+          }});
+        else
+          Branches.update(br, { $set : {
+            log: Branches.findOne(br)['log'] + "\n= ERROR =",
+            status: "failed",
+            running: false, // TODO: check running in docker instead
+          }});
       });
 
     },
 
     stopStack: function(branch) {
-      var b = branch['branch'];
-      var stack = branch['stack'];
+      let b = branch['branch'];
+      let br = bs(b);
+      let stack = branch['stack'];
 
-      var envs = {
+      let envs = {
         IMAGE: baseImage + ':' + b
       }
 
       log.info('stop stack', b, stack);
 
-      for (var service in stack) {
-        for (var name in stack[service]) {
+      for (let service in stack) {
+        for (let name in stack[service]) {
           envs[name] = stack[service][name];
         }
       }
@@ -264,9 +271,9 @@ if (Meteor.isServer) {
         dockerCompose + " -p " + baseImage + b + " stop"
       ].join(' && ')], { env: envs });
 
-      logCommand(command, b, "stopping...", function() {
-        Branches.update({ branch: b, app: conf.serviceName }, { $set : {
-          log: Branches.findOne({branch:b, app: conf.serviceName})['log'] + "\n= DONE =",
+      logCommand(command, br, "stopping...", function() {
+        Branches.update(br, { $set : {
+          log: Branches.findOne(br)['log'] + "\n= DONE =",
           stack: {},
           uptime: null,
           status: 'stopped',
@@ -297,7 +304,7 @@ if (Meteor.isServer) {
     // first pass on DB at startup for cleaning purposes?
     // is this ever getting called?
     Meteor.bindEnvironment( function() {
-      var branches = getAllBranches();
+      let branches = getAllBranches();
 
       branches.forEach(function(val, i) {
 
@@ -315,7 +322,7 @@ if (Meteor.isServer) {
     setInterval(Meteor.bindEnvironment( function() {
 
       // listen for new/old branches
-      var branches = getAllBranches();
+      let branches = getAllBranches();
 
       branches.forEach(function(val, i) {
         Branches.update({ branch: val['branch'], app: conf.serviceName }, { $set:{
@@ -328,7 +335,7 @@ if (Meteor.isServer) {
       });
 
       // listen to existing branches for changes
-      var watchBranches = Branches.find({ watching: true, app: conf.serviceName });
+      let watchBranches = Branches.find({ watching: true, app: conf.serviceName });
 
       // TODO: implement queue here so the same build does not fall over itself
       watchBranches.forEach(function(val, i) {
