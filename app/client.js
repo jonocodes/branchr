@@ -96,7 +96,9 @@ if (Meteor.isClient) {
       Meteor.call('stopStack', template.data);
     },
     'click button.log': function(event, template) {
-      // log.info('toggle log view ' + template.data['branch']);
+      Session.set('currentBranch', template.data['branch']);
+    },
+    'click tr.branchrow': function(event, template) {
       Session.set('currentBranch', template.data['branch']);
     },
     'change input.watchbox': function(event, template) {

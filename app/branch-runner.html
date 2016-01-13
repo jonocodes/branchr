@@ -5,36 +5,37 @@
 </head>
 
 <body>
-  <!-- <h1>Branchr</h1> -->
 
-  <div class="row">
-    <div class="col-md-offset-1 col-md-5">
-      <h2>{{serviceName}}</h2>
-    </div>
-    <div class="col-md-5 text-right vcenter">
-      <!-- <br /> -->
-        Server time: {{time}}
-        <!-- <br />Repo: Local -->
-    </div>
-  </div>
+  <div class="container">
 
-  <div class="row">
-    <div class="col-md-offset-1 col-md-10">
-      <table class="table table-hover">
-        <thead>
-          <tr><th>branch</th><th>last commit</th><th>actions</th>
-            <th>watch</th><th>status</th><th>stack</th></tr>
-          </thead>
-        <tbody>
-          {{#each branches}}
-            {{> branchrow}}
-          {{/each}}
-        </tbody>
-      </table>
+    <div class="row">
+      <div class="col-md-offset-1 col-md-5">
+        <!-- <h1>Branchr <small>{{serviceName}}</small></h1> -->
+        <h2>{{serviceName}}</h2>
+      </div>
+      <div class="col-md-5 text-right vcenter">
+        <!-- <br /> -->
+          Server time: {{time}}
+          <!-- <br />Repo: Local -->
+      </div>
     </div>
-  </div>
 
-  <div class="row">
+    <div class="row">
+      <div class="col-md-offset-1 col-md-10">
+        <table class="table table-hover">
+          <thead>
+            <tr><th>branch</th><th>last commit</th><th>actions</th>
+              <th>watch</th><th>status</th><th>stack</th></tr>
+            </thead>
+          <tbody>
+            {{#each branches}}
+              {{> branchrow}}
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     {{#with log}}
       {{> logarea}}
     {{/with}}
@@ -43,7 +44,7 @@
 </body>
 
 <template name="branchrow">
-  <tr {{rowActive branch}}>
+  <tr {{rowActive branch}} class="branchrow">
     <td>{{branch}}</td>
     <td>
       <div class="commit">
@@ -54,7 +55,8 @@
       </div>
     </td>
     <td>
-      <button class="log"><i class="fa fa-book {{#if isLogging branch}}fa-rotate-90{{/if}}"></i></button>
+      <button class="log"><i class="fa fa-book"></i></button>
+      <!-- <button class="log"><i class="fa fa-book {{#if isLogging branch}}fa-rotate-90{{/if}}"></i></button> -->
 
       {{#if isWorking status}}
         <button class="stop"><i class="fa fa-spinner fa-spin"></i></button>

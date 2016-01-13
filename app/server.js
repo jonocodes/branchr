@@ -252,8 +252,6 @@ if (Meteor.isServer) {
 
     startStack: function(branch, triggered) {
 
-      // log.info('start');
-
       let b = branch['branch'];
       let br = bs(b);
       let image = baseImage + ':' + b;
