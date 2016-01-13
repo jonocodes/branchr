@@ -1,0 +1,19 @@
+branchr:
+  # image: branchr
+  build: .
+  ports:
+    - 4000:80
+  links:
+    - mongo
+  privileged: true
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - ../../lcd-test-app:/git
+    # - settings.json:/app/settings.json
+  environment:
+    - MONGO_URL=mongodb://mongo/branchr
+    - ROOT_URL=http://localhost
+    # - METEOR_SETTINGS="{\"public\":{\"serviceNameasd\":\"asd\"}}"
+
+mongo:
+  image: mongo:latest

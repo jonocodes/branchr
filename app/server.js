@@ -351,7 +351,8 @@ if (Meteor.isServer) {
   });
 
   Meteor.startup(function () {
-    log.info('server start');
+    log.info('server start. app', conf.serviceName);
+    log.info('local git', conf.localGitDir);
 
     // Branches.remove({}); // clears the DB
 
