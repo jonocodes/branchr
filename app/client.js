@@ -33,7 +33,7 @@ if (Meteor.isClient) {
         {sort: { "lastCommit.date" : -1 }});
     },
     log: function() {
-      return Branches.find({
+      return Branches.findOne({
         branch: Session.get('currentBranch'), app: conf.serviceName });
     }
   });
@@ -68,6 +68,10 @@ if (Meteor.isClient) {
     },
     isWatching: function() {
       return this.watching !== undefined && this.watching;
+    },
+    rowActive: function(branch) {
+      if (Session.get('currentBranch') == branch)
+        return { class: "active" };
     }
   });
 

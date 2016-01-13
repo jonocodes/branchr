@@ -11,7 +11,7 @@ a {
   color: red;
 }
 
-table {
+/*table {
   margin-left: auto;
   margin-right: auto;
 }
@@ -19,7 +19,16 @@ table {
 td, th {
   padding: 10px;
   text-align: left;
-  /*vertical-align: top;*/
+}*/
+
+pre {
+  white-space: pre-wrap;
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
 }
 
 td.center {

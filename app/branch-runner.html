@@ -7,30 +7,43 @@
 <body>
   <!-- <h1>Branchr</h1> -->
 
-  <div class="right">
-    Server time: {{time}}
-    <!-- <br />Repo: Local -->
+  <div class="row">
+    <div class="col-md-offset-1 col-md-5">
+      <h2>{{serviceName}}</h2>
+    </div>
+    <div class="col-md-5 text-right vcenter">
+      <!-- <br /> -->
+        Server time: {{time}}
+        <!-- <br />Repo: Local -->
+    </div>
   </div>
 
-  <h2>{{serviceName}}</h2>
+  <div class="row">
+    <div class="col-md-offset-1 col-md-10">
+      <table class="table table-hover">
+        <thead>
+          <tr><th>branch</th><th>last commit</th><th>actions</th>
+            <th>watch</th><th>status</th><th>stack</th></tr>
+          </thead>
+        <tbody>
+          {{#each branches}}
+            {{> branchrow}}
+          {{/each}}
+        </tbody>
+      </table>
+    </div>
+  </div>
 
-  <table>
-    <tr><th>branch</th><th>last commit</th><th>actions</th>
-      <th>watch</th><th>status</th><th>stack</th></tr>
-    {{#each branches}}
-      {{> branchrow}}
-    {{/each}}
-  </table>
-
-  <h2>Log</h2>
-  {{#each log}}
-    {{> logarea}}
-  {{/each}}
+  <div class="row">
+    {{#with log}}
+      {{> logarea}}
+    {{/with}}
+  </div>
 
 </body>
 
 <template name="branchrow">
-  <tr>
+  <tr {{rowActive branch}}>
     <td>{{branch}}</td>
     <td>
       <div class="commit">
@@ -41,7 +54,6 @@
       </div>
     </td>
     <td>
-
       <button class="log"><i class="fa fa-book {{#if isLogging branch}}fa-rotate-90{{/if}}"></i></button>
 
       {{#if isWorking status}}
@@ -91,14 +103,26 @@
 </template>
 
 <template name="logarea">
-  Branch: {{branch}}<br/>
-  {{#if triggered}}
-    Triggered: {{triggered}} at {{time}}<br/>
-  {{/if}}
-  <pre>{{log}}</pre>
 
-  {{#if isWorking}}
-    <i class="fa fa-spinner fa-spin"></i> Running...<br />
-  {{/if}}
+  <div class="row">
+    <div class="col-md-offset-1 col-md-5">
+      <h2>Log</h2>
+    </div>
+    <div class="col-md-5 text-right vcenter">
+      Branch: {{branch}}<br/>
+      {{#if triggered}}
+        Triggered: {{triggered}} at {{time}}<br/>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-offset-1 col-md-10 col-md-offset-1">
+      <pre>{{log}}</pre>
+      {{#if isWorking}}
+        <i class="fa fa-spinner fa-spin"></i> Running...<br /><br />
+      {{/if}}
+    </div>
+  </div>
 
 </template>
