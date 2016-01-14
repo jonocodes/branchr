@@ -8,8 +8,9 @@ branchr:
   privileged: true
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - ../../lcd-test-app:/git
-    - ../sample/docker-compose.yml:/root/docker-compose.yml
+    - $GIT_DIR:/git
+    - $APP_COMPOSE:/root/docker-compose.yml
+    # TODO: bring over ssh keys
   environment:
     - MONGO_URL=mongodb://mongo/branchr
     - ROOT_URL=http://localhost
@@ -18,5 +19,3 @@ branchr:
 
 mongo:
   image: mongo:latest
-
-# METEOR_SETTINGS=$(cat ../sample/settings.json) docker-compose up

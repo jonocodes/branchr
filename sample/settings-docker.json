@@ -1,0 +1,19 @@
+{
+  "public": {
+    "serviceName": "Test App",
+    "localGitDir": "/git",
+    "dockerBuildDir" : "/git",
+    "dockerComposeFile": "/root/docker-compose.yml",
+    "dockerBuildCmd": "docker build -t $IMAGE .",
+    "host": "localhost",
+
+    "requiredPorts" : {
+      "web" : [
+        "PORT_HTTP_WEB"
+      ],
+      "redis" : [
+        "PORT_TCP_REDIS"
+      ]
+    }
+  }
+}

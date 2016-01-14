@@ -79,7 +79,8 @@ if (Meteor.isServer) {
 
     log.info('checking for updates in ' + branchName);
     command = spawn('sh', ['-cx',
-    "git --git-dir=" + conf.localGitDir + "/.git pull"]);
+    "cd " + conf.localGitDir + " && " +
+    "git pull"]);
 
     command.stdout.on('data', function (data) {
       future.return(data);
@@ -110,7 +111,8 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + conf.localGitDir + "/.git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae%n%ai'"]);
+    "cd " + conf.localGitDir + " && " +
+    "git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae%n%ai'"]);
 
     command.stdout.on('data', function (data) {
       let commit = (''+data).trim().split("\n");
@@ -138,7 +140,8 @@ if (Meteor.isServer) {
     var future = new Future();
 
     command = spawn('sh', ['-c',
-    "git --git-dir=" + conf.localGitDir + "/.git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
+    "cd " + conf.localGitDir + " && " +
+    "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
       let branchNames = (''+data).trim().split("\n");
