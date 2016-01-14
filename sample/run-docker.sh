@@ -18,4 +18,5 @@ export GIT_DIR=$LOCAL_GIT
 export APP_COMPOSE=$(pwd)/docker-compose.yml
 
 $COMPOSE kill
+$COMPOSE build
 $COMPOSE up

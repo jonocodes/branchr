@@ -4,6 +4,8 @@ set -x
 
 LOCAL_GIT=/tmp/lcd-test-app
 
+# Make sure they have docker-compose and meteor installed
+
 if [ ! -d $LOCAL_GIT ];
   then
 
