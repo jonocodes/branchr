@@ -10,7 +10,6 @@ if (conf.localGitDir === undefined)
 host = 'localhost'; // docker host
 if (conf.host)
   host = conf.host
-// TODO: change host to docker_host if they are running docker-machine
 
 // TODO: toggle listening local or remote (default)
 

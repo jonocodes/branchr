@@ -1,10 +1,11 @@
 {
   "public": {
     "serviceName": "Test App",
-    "localGitDir": "/tmp/lcd-test-app",
-    "dockerBuildDir" : "/tmp/lcd-test-app",
+    "localGitDir": "$LOCAL_GIT",
+    "dockerBuildDir" : "$DOCKER_BUILD_DUIR",
     "dockerComposeFile": "/tmp/demo-compose.yml",
     "dockerBuildCmd": "docker build -t $IMAGE .",
+    "host": "$DOCKER_HOST",
 
     "requiredPorts" : {
       "web" : [

@@ -1,0 +1,18 @@
+{
+  "public": {
+    "serviceName": "Test App",
+    "localGitDir": "/tmp/branchr-test-app",
+    "dockerBuildDir" : "/tmp/branchr-test-app",
+    "dockerComposeFile": "/tmp/demo-compose.yml",
+    "dockerBuildCmd": "docker build -t $IMAGE .",
+
+    "requiredPorts" : {
+      "web" : [
+        "PORT_HTTP_WEB"
+      ],
+      "redis" : [
+        "PORT_TCP_REDIS"
+      ]
+    }
+  }
+}

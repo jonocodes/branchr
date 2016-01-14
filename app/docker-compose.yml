@@ -11,11 +11,11 @@ branchr:
     - $GIT_DIR:/git
     - $APP_COMPOSE:/root/docker-compose.yml
     # TODO: bring over ssh keys
+    # TODO: set host if docker-machine
   environment:
     - MONGO_URL=mongodb://mongo/branchr
     - ROOT_URL=http://localhost
     - 'METEOR_SETTINGS=$METEOR_SETTINGS'
-    # - 'METEOR_SETTINGS={  "public": {  "serviceName": "Test App",    "localGitDir": "/git",    "dockerBuildDir" : "/git",    "dockerComposeFile": "/root/docker-compose.yml",    "dockerBuildCmd": "docker build -t $$IMAGE .",    "host": "localhost",    "requiredPorts" : {      "web" : [        "PORT_HTTP_WEB"      ],      "redis" : [        "PORT_TCP_REDIS"      ]    }  }}'
 
 mongo:
   image: mongo:latest

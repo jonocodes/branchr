@@ -16,13 +16,13 @@ Make sure docker is setup to [run without needing sudo](http://askubuntu.com/que
 
 ## Demo
 
-The demo will pull down a sample app and run Branchr for you. Enter the sample/ dir and run the project using Docker or in development mode. Then visit http://localhost:3000
+The demo will pull down a sample app and run Branchr for you. Run the project using Docker or in development mode (see below). Then visit http://localhost:3000
 
 ### Using Docker
-`./run-docker.sh`
+`demo/run.sh docker`
 
 ### In development
-`./run-demo.sh`
+`demo/run.sh dev`
 
 ## Usage
 
