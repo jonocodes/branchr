@@ -213,7 +213,7 @@ if (Meteor.isServer) {
     let runningBranches = getRunningBranches();
 
     log.info("remote branches: " + allBranches.length +
-      "  running branches: " + getRunningBranches.length);
+      "  running branches: " + runningBranches.length);
 
     allBranches.forEach(function(val, i) {
 
@@ -356,6 +356,7 @@ if (Meteor.isServer) {
   Meteor.startup(function () {
     log.info('server start. app', conf.serviceName);
     log.info('local git', conf.localGitDir);
+    // TODO: print git remote location
 
     // Branches.remove({}); // clears the DB
 

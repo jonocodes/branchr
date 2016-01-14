@@ -1,17 +1,15 @@
 branchr:
-  # image: branchr
   build: .
   ports:
     - 3000:80
   links:
     - mongo
-  privileged: true
+  # privileged: true
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - $GIT_DIR:/git
-    - $APP_COMPOSE:/root/docker-compose.yml
-    # TODO: bring over ssh keys
-    # TODO: set host if docker-machine
+    - $APP_COMPOSE:/tmp/app-compose.yml
+    # TODO: bring over ssh keys for private git repos
   environment:
     - MONGO_URL=mongodb://mongo/branchr
     - ROOT_URL=http://localhost
