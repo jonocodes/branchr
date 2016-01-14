@@ -2,31 +2,33 @@
 
 A continuous delivery pipeline for running git branches of a web service.
 
+# Screenshot
+
 ![Screenshot](screenshot.png)
 
 ## Requirements
 * Docker
 * docker-compose
 * git
+* [Meteor](https://www.meteor.com/install) (for development only)
 
-The app you want to run should be managed by git, have a Docker image for it and a compose file. Compose file needs to have environment variables for ports.
-
-Make sure you can [run docker without sudo](http://askubuntu.com/questions/477551/how-can-i-use-docker-without-sudo).
+Make sure docker is setup to [run without needing sudo](http://askubuntu.com/questions/477551/how-can-i-use-docker-without-sudo).
 
 ## Demo
 
-Enter the sample/ dir and run the project. Then visit http://localhost:3000
+The demo will pull down a sample app and run Branchr for you. Enter the sample/ dir and run the project using Docker or in development mode. Then visit http://localhost:3000
 
 ### Using Docker
-
 `./run-docker.sh`
 
 ### In development
-
-You will need MeteorJS installed for this.
-
 `./run-demo.sh`
 
+## Usage
+
+The app you want to run should be managed by git, have a Docker image for it and a compose file. Compose file needs to have environment variables for ports...
+
+TODO: explain settings.json
 
 ## TODO
 
