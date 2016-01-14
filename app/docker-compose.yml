@@ -2,18 +2,21 @@ branchr:
   # image: branchr
   build: .
   ports:
-    - 4000:80
+    - 3000:80
   links:
     - mongo
   privileged: true
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - ../../lcd-test-app:/git
-    # - settings.json:/app/settings.json
+    - ../sample/docker-compose.yml:/root/docker-compose.yml
   environment:
     - MONGO_URL=mongodb://mongo/branchr
     - ROOT_URL=http://localhost
-    # - METEOR_SETTINGS="{\"public\":{\"serviceNameasd\":\"asd\"}}"
+    - 'METEOR_SETTINGS=$METEOR_SETTINGS'
+    # - 'METEOR_SETTINGS={  "public": {  "serviceName": "Test App",    "localGitDir": "/git",    "dockerBuildDir" : "/git",    "dockerComposeFile": "/root/docker-compose.yml",    "dockerBuildCmd": "docker build -t $$IMAGE .",    "host": "localhost",    "requiredPorts" : {      "web" : [        "PORT_HTTP_WEB"      ],      "redis" : [        "PORT_TCP_REDIS"      ]    }  }}'
 
 mongo:
   image: mongo:latest
+
+# METEOR_SETTINGS=$(cat ../sample/settings.json) docker-compose up
