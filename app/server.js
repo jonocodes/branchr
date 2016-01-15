@@ -169,11 +169,12 @@ if (Meteor.isServer) {
     command = spawn('sh', ['-c',
     "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
 
+    var branches = {};
+
     command.stdout.on('data', function (data) {
 
       let containers = (''+data).trim().split('\n');
 
-      let branches = {};
       containers.forEach(function(line, i) {
 
         let d = line.split('\t');

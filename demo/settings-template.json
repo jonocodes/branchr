@@ -1,6 +1,6 @@
 {
   "public": {
-    "serviceName": "Test App",
+    "serviceName": "Demo App",
     "localGitDir": "$SETTINGS_GIT",
     "dockerBuildDir" : "$SETTINGS_GIT",
     "dockerComposeFile": "/tmp/demo-compose.yml",
