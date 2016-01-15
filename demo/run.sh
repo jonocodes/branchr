@@ -17,7 +17,7 @@ function get_docker_host {
 function process_template {
 	INPUT=$1
   OUTPUT=$2
-  
+
 	echo "Processing template $INPUT"
 
   eval "cat <<EOF
@@ -35,7 +35,7 @@ cd $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 LOCAL_GIT=/tmp/branchr-test-app
 SETTINGS=/tmp/branchr-settings.json
 
-export SETTINGS_HOST=get_docker_host
+export SETTINGS_HOST=$(get_docker_host)
 
 if [ ! -d $LOCAL_GIT ]; then
   git clone git@github.com:jonocodes/lcd-test-app.git $LOCAL_GIT

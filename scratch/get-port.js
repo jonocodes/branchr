@@ -128,6 +128,11 @@ var random_port = function() {
 const minPort = 5000;
 const maxPort = 8080;
 
+// minport, maxport, maxtries
+//
+// return 0 if not found
+
+
 var randPort = function(cb) {
 
   var port = Math.floor(Math.random() * (maxPort - minPort)) + minPort;

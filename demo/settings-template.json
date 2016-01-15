@@ -3,7 +3,7 @@
     "serviceName": "Demo App",
     "localGitDir": "$SETTINGS_GIT",
     "dockerBuildDir" : "$SETTINGS_GIT",
-    "dockerComposeFile": "/tmp/demo-compose.yml",
+    "dockerComposeFile": "/tmp/app-compose.yml",
     "dockerBuildCmd": "docker build -t \$IMAGE .",
     "host": "$SETTINGS_HOST",
 
