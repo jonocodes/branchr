@@ -1,0 +1,17 @@
+{
+  "public": {
+    "serviceName": "Named Entity Database API",
+    "localGitDir": "/home/jono/src/named-entity.service",
+    "dockerBuildDir" : "/home/jono/src/Dockerfiles",
+    "dockerComposeFile": "/home/jono/src/branchr/samples/nedapi.yml",
+    "dockerBuildCmd": "projects/named-entity.service/build-image.sh",
+    "host": "localhost",
+
+    "requiredPorts" : {
+      "nedapi": [
+        "PORT_HTTP_NED",
+        "PORT_HTTPS_NED"
+      ]
+    }
+  }
+}

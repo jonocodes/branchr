@@ -72,6 +72,11 @@ if (Meteor.isClient) {
     rowActive: function(branch) {
       if (Session.get('currentBranch') == branch)
         return { class: "active" };
+    },
+    prepMessage: function(message) {
+      if (message.length > 45)
+        return message.substring(0, 45) + "...";
+      return message;
     }
   });
 

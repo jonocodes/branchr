@@ -122,9 +122,7 @@ if (Meteor.isServer) {
     }
 
     result['avatar'] = 'https://www.gravatar.com/avatar/' + CryptoJS.MD5(result['email']).toString();
-
-    // log.info('parseCommit', result);
-
+    
     return result;
   }
 
@@ -134,7 +132,7 @@ if (Meteor.isServer) {
 
     let command = spawn('sh', ['-c',
       "cd " + conf.localGitDir + " && " +
-      "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%ntitle %s%nemail %ae%ndate %ai'"]);
+      "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%nmessage %s%nemail %ae%ndate %ai'"]);
 
     command.stdout.on('data', function(data) {
       future.return(parseCommit((''+data).trim()));
