@@ -9,6 +9,8 @@ if (Meteor.isServer) {
   const minPort = 5000;
   const maxPort = 7000;
 
+  const pullCommand = (conf.repoLocallity == "local") ? ":"  : "git pull";
+
 
   var net = Npm.require('net');
 
@@ -78,9 +80,11 @@ if (Meteor.isServer) {
     var future = new Future();
 
     log.info('checking for updates in ' + branchName);
-    command = spawn('sh', ['-cx',
-    "cd " + conf.localGitDir + " && " +
-    "git pull"]);
+
+    let command = spawn('sh', ['-cx',
+      "cd " + conf.localGitDir,
+      "git checkout " + branchName,
+      pullCommand].join(' && '));
 
     command.stdout.on('data', function (data) {
       future.return(data);
@@ -106,26 +110,34 @@ if (Meteor.isServer) {
     return false;
   }
 
+  function parseCommit(logEntry) {
+
+    let lines = logEntry.split('\n');
+
+    result = {};
+
+    for (let l in lines) {
+      let arr = lines[l].split(/ (.+)?/);
+      result[arr[0]] = arr[1];
+    }
+
+    result['avatar'] = 'https://www.gravatar.com/avatar/' + CryptoJS.MD5(result['email']).toString();
+
+    // log.info('parseCommit', result);
+
+    return result;
+  }
+
   function getLastCommit(branchName) {
 
     var future = new Future();
 
-    command = spawn('sh', ['-c',
-    "cd " + conf.localGitDir + " && " +
-    "git log origin/" + branchName + " -1 --format='%h%n%an%n%cr%n%s%n%ae%n%ai'"]);
+    let command = spawn('sh', ['-c',
+      "cd " + conf.localGitDir + " && " +
+      "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%ntitle %s%nemail %ae%ndate %ai'"]);
 
-    command.stdout.on('data', function (data) {
-      let commit = (''+data).trim().split("\n");
-
-      future.return({
-        checksum: commit[0],
-        author: commit[1],
-        dateRelative: commit[2],
-        title: commit[3],
-        email: commit[4],
-        date: commit[5],
-        gravatar: "https://www.gravatar.com/avatar/" + CryptoJS.MD5(commit[4]).toString()
-      });
+    command.stdout.on('data', function(data) {
+      future.return(parseCommit((''+data).trim()));
     });
 
     command.stderr.on('data', function(data) {
@@ -139,9 +151,9 @@ if (Meteor.isServer) {
 
     var future = new Future();
 
-    command = spawn('sh', ['-c',
-    "cd " + conf.localGitDir + " && " +
-    "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
+    let command = spawn('sh', ['-c',
+      "cd " + conf.localGitDir + " && " +
+      "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
       let branchNames = (''+data).trim().split("\n");
@@ -166,8 +178,8 @@ if (Meteor.isServer) {
   function getRunningBranches() {
     var future = new Future();
 
-    command = spawn('sh', ['-c',
-    "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
+    let command = spawn('sh', ['-c',
+      "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
 
     var branches = {};
 
@@ -214,7 +226,7 @@ if (Meteor.isServer) {
     let runningBranches = getRunningBranches();
 
     log.info("remote branches: " + allBranches.length +
-      "  running branches: " + runningBranches.length);
+      "  running branches: " + Object.keys(runningBranches).length);
 
     allBranches.forEach(function(val, i) {
 
@@ -272,18 +284,16 @@ if (Meteor.isServer) {
 
       log.info("starting stack " + b, stack);
 
-      var command = spawn('sh', ['-cx', [
+      let command = spawn('sh', ['-cx', [
         // "ssh -T git@github.com", // ssh-agent -l
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
-        "git pull",       // TODO: only do if monitoring remote is specified
+        pullCommand,
         "cd " + conf.dockerBuildDir,
         conf.dockerBuildCmd,
         dockerCompose + " -p " + baseImage + b + " stop",
         dockerCompose + " -p " + baseImage + b + " up -d"
       ].join(' && ')], { env: envs });
-
-      // TODO: add spinner at bottom like teamcity
 
       logCommand(command, br, "starting...", function(returnCode) {
         if (returnCode == 0)
@@ -324,7 +334,7 @@ if (Meteor.isServer) {
 
       // log.debug('envs', envs);
 
-      command = spawn('sh', ['-cx', [
+      let command = spawn('sh', ['-cx', [
         "cd " + conf.localGitDir,
         dockerCompose + " -p " + baseImage + b + " stop"
       ].join(' && ')], { env: envs });
