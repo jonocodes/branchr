@@ -83,11 +83,6 @@ if (Meteor.isServer) {
 
     log.info('checking for updates in ' + branchName);
 
-    // log.info('command', ['-c', [
-    //   "cd " + conf.localGitDir,
-    //   "git checkout " + branchName,
-    //   pullCommand].join(' && ')]);
-
     let command = spawn('sh', ['-c', [
       "cd " + conf.localGitDir,
       "git checkout " + branchName,
@@ -165,11 +160,12 @@ if (Meteor.isServer) {
       let branchNames = data.toString().trim().split("\n");
 
       var resultList = [];
-      branchNames.forEach(function(val, i) {
+
+      for (let i in branchNames) {
         resultAssoc = {};
-        resultAssoc['branch'] = val;
+        resultAssoc['branch'] = branchNames[i];
         resultList.push(resultAssoc);
-      });
+      }
 
       future.return(resultList); // TODO: append since this is a stream?
     });
@@ -193,9 +189,9 @@ if (Meteor.isServer) {
 
       let containers = data.toString().trim().split('\n');
 
-      containers.forEach(function(line, i) {
+      for (let i in containers) {
 
-        let d = line.split('\t');
+        let d = containers[i].split('\t');
         let split_name = d[0].substring(baseImage.length, d[0].length-2).split('_');
         let branch = split_name[0];
         let service = split_name[1];
@@ -205,13 +201,14 @@ if (Meteor.isServer) {
         if (branches[branch] == undefined)
           branches[branch] = { uptime: uptime, stack: {} };
 
-        d[2].split(',').forEach(function(p, i) {
-          ports.push(p.replace(/^[^:]+:(\d+).*$/, "$1"));
-        });
+        let portList = d[2].split(',');
+
+        for (let port in portList)
+          ports.push(portList[port].replace(/^[^:]+:(\d+).*$/, "$1"));
 
         branches[branch]['stack'][service] = ports;
+      }
 
-      });
       future.return(branches);
     });
 
@@ -237,18 +234,17 @@ if (Meteor.isServer) {
       "  running: " + Object.keys(runningBranches).length +
       "  watched: " + Object.keys(watchBranches).length);
 
-    allBranches.forEach(function(val, i) {
-
-      let dockerName = dockerNamify(val['branch']);
+    for (let i in allBranches) {
+      let dockerName = dockerNamify(allBranches[i]['branch']);
 
       if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
-        val['running'] = false;
+        allBranches[i]['running'] = false;
       } else {
-        val['stack'] = runningBranches[dockerName]['stack'];
-        val['uptime'] = runningBranches[dockerName]['uptime'];
-        val['running'] = true;
+        allBranches[i]['stack'] = runningBranches[dockerName]['stack'];
+        allBranches[i]['uptime'] = runningBranches[dockerName]['uptime'];
+        allBranches[i]['running'] = true;
       }
-    });
+    }
 
     return allBranches;
   }
@@ -278,25 +274,24 @@ if (Meteor.isServer) {
     // listen for new/old branches
     let branches = getAllBranches();
 
-    branches.forEach(function(val, i) {
-      Branches.update( bs(val['branch']), { $set:{
-        running: val['running'],
-        uptime: val['uptime'],
-        lastCommit: getLastCommit(val['branch'])  // might not be same as running?
+    for (let branch in branches) {
+      let b = branches[branch]
+      Branches.update( bs(b['branch']), { $set:{
+        running: b['running'],
+        uptime: b['uptime'],
+        lastCommit: getLastCommit(b['branch'])  // might not be same as running?
       }},
       { upsert : true });
-    });
+    }
 
     // listen to existing branches for changes
     let watchBranches = Branches.find(
-      { watching: true, app: conf.serviceName });
-
-    // log.info('watchBranches', watchBranches.fetch());
+      { watching: true, app: conf.serviceName }).fetch();
 
     // TODO: implement queue here so the same build does not fall over itself
-    watchBranches.forEach(function(val, i) {
-      checkForUpdate(val['branch'], val);
-    });
+
+    for (let i in watchBranches)
+      checkForUpdate(watchBranches[i]['branch'], watchBranches[i]);
 
     setTimeout(Meteor.bindEnvironment(listenForBranchesAndCommits), pollMilliseconds);
   }
@@ -314,10 +309,11 @@ if (Meteor.isServer) {
 
       for (let service in conf.requiredPorts) {
         stack[service] = {};
-        conf.requiredPorts[service].forEach(function(name, i) {
+        for (let i in conf.requiredPorts[service]) {
+          let name = conf.requiredPorts[service][i];
           stack[service][name] = getUnusedPort();
           envs[name] = stack[service][name];
-        });
+        }
       }
 
       log.info("starting stack", b);
