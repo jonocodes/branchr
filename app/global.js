@@ -1,6 +1,3 @@
-
-// TODO: toggle listening local or remote (default)
-
 Logger.setLevel('trace');
 log = new Logger('app');
 

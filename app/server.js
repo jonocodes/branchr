@@ -9,6 +9,8 @@ if (Meteor.isServer) {
   const minPort = 5000;
   const maxPort = 7000;
 
+  const pollMilliseconds = 10 * 1000;
+
   const pullCommand = (conf.repoLocallity == "local") ? ":"  : "git pull";
 
 
@@ -73,7 +75,7 @@ if (Meteor.isServer) {
 
   // helper function to select a branch
   function bs(name) {
-    return { branch: name, app: conf.serviceName};
+    return { branch: name, app: conf.serviceName };
   }
 
   function checkForUpdate(branchName, branchInDb) {
@@ -81,25 +83,30 @@ if (Meteor.isServer) {
 
     log.info('checking for updates in ' + branchName);
 
-    let command = spawn('sh', ['-cx',
+    // log.info('command', ['-c', [
+    //   "cd " + conf.localGitDir,
+    //   "git checkout " + branchName,
+    //   pullCommand].join(' && ')]);
+
+    let command = spawn('sh', ['-c', [
       "cd " + conf.localGitDir,
       "git checkout " + branchName,
-      pullCommand].join(' && '));
+      pullCommand].join(' && ')]);
 
     command.stdout.on('data', function (data) {
-      future.return(data);
+      future.return(data.toString());
     });
 
     command.stderr.on('data', function (data) {
-      log.error("stderr: " + data);
+      // log.error("stderr: " + data);
     });
 
     future.wait();
 
     let lastCommit = getLastCommit(branchName);
-    let runningCommit = branchInDb['lastCommit'];
+    let pendingChecksum = branchInDb['pendingChecksum'];
 
-    if (lastCommit['checksum'] !== runningCommit['checksum']) {
+    if (lastCommit['checksum'] !== pendingChecksum) {
       log.info('git was updated for ' + branchName);
 
       // TODO: queue up instead of calling immediately?
@@ -122,7 +129,7 @@ if (Meteor.isServer) {
     }
 
     result['avatar'] = 'https://www.gravatar.com/avatar/' + CryptoJS.MD5(result['email']).toString();
-    
+
     return result;
   }
 
@@ -132,10 +139,11 @@ if (Meteor.isServer) {
 
     let command = spawn('sh', ['-c',
       "cd " + conf.localGitDir + " && " +
+      pullCommand + " && " +
       "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%nmessage %s%nemail %ae%ndate %ai'"]);
 
     command.stdout.on('data', function(data) {
-      future.return(parseCommit((''+data).trim()));
+      future.return(parseCommit(data.toString().trim()));
     });
 
     command.stderr.on('data', function(data) {
@@ -154,7 +162,7 @@ if (Meteor.isServer) {
       "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
     command.stdout.on('data', function (data) {
-      let branchNames = (''+data).trim().split("\n");
+      let branchNames = data.toString().trim().split("\n");
 
       var resultList = [];
       branchNames.forEach(function(val, i) {
@@ -183,7 +191,7 @@ if (Meteor.isServer) {
 
     command.stdout.on('data', function (data) {
 
-      let containers = (''+data).trim().split('\n');
+      let containers = data.toString().trim().split('\n');
 
       containers.forEach(function(line, i) {
 
@@ -222,9 +230,12 @@ if (Meteor.isServer) {
   function getAllBranches() {
     let allBranches = getRemoteBranches();
     let runningBranches = getRunningBranches();
+    let watchBranches = Branches.find(
+      { watching: true, app: conf.serviceName }).fetch();
 
-    log.info("remote branches: " + allBranches.length +
-      "  running branches: " + Object.keys(runningBranches).length);
+    log.info("Branches  remote: " + allBranches.length +
+      "  running: " + Object.keys(runningBranches).length +
+      "  watched: " + Object.keys(watchBranches).length);
 
     allBranches.forEach(function(val, i) {
 
@@ -242,9 +253,9 @@ if (Meteor.isServer) {
     return allBranches;
   }
 
-  function logCommand(command, br, actionStatus, closeCallback) {
+  function logCommand(command, br, actionStatus, pendingChecksum, closeCallback) {
 
-    Branches.update( br, {$set: { log:'' }});
+    Branches.update( br, {$set: { log:'', pendingChecksum: pendingChecksum }});
 
     command.stdout.on('data', Meteor.bindEnvironment( function(data) {
       Branches.update(br, { $set :
@@ -262,6 +273,34 @@ if (Meteor.isServer) {
     }));
   }
 
+  function listenForBranchesAndCommits() {
+
+    // listen for new/old branches
+    let branches = getAllBranches();
+
+    branches.forEach(function(val, i) {
+      Branches.update( bs(val['branch']), { $set:{
+        running: val['running'],
+        uptime: val['uptime'],
+        lastCommit: getLastCommit(val['branch'])  // might not be same as running?
+      }},
+      { upsert : true });
+    });
+
+    // listen to existing branches for changes
+    let watchBranches = Branches.find(
+      { watching: true, app: conf.serviceName });
+
+    // log.info('watchBranches', watchBranches.fetch());
+
+    // TODO: implement queue here so the same build does not fall over itself
+    watchBranches.forEach(function(val, i) {
+      checkForUpdate(val['branch'], val);
+    });
+
+    setTimeout(Meteor.bindEnvironment(listenForBranchesAndCommits), pollMilliseconds);
+  }
+
   Meteor.methods({
 
     startStack: function(branch, triggered) {
@@ -271,6 +310,7 @@ if (Meteor.isServer) {
       let image = baseImage + ':' + b;
       let stack = {};
       let envs = {  IMAGE: image  }
+      let runningCommit = getLastCommit(b);
 
       for (let service in conf.requiredPorts) {
         stack[service] = {};
@@ -280,7 +320,7 @@ if (Meteor.isServer) {
         });
       }
 
-      log.info("starting stack " + b, stack);
+      log.info("starting stack", b);
 
       let command = spawn('sh', ['-cx', [
         // "ssh -T git@github.com", // ssh-agent -l
@@ -293,7 +333,8 @@ if (Meteor.isServer) {
         dockerCompose + " -p " + baseImage + b + " up -d"
       ].join(' && ')], { env: envs });
 
-      logCommand(command, br, "starting...", function(returnCode) {
+      logCommand(command, br, "starting...", runningCommit.checksum, function(returnCode) {
+        // is scope of br and runningCommit valid here?
         if (returnCode == 0)
           Branches.update(br, { $set : {
             log: Branches.findOne(br)['log'] + "\n= DONE =",
@@ -301,13 +342,17 @@ if (Meteor.isServer) {
             status: "running",
             running: true, // TODO: check running in docker instead
             triggered: triggered, // TODO: set this at start, not finish
-            time: (new Date).toTimeString()
+            time: (new Date).toTimeString(),
+            runningCommit: runningCommit,
+            pendingChecksum: null
           }});
         else
           Branches.update(br, { $set : {
             log: Branches.findOne(br)['log'] + "\n= ERROR =",
             status: "failed",
             running: false, // TODO: check running in docker instead
+            runningCommit: null,
+            pendingChecksum: null
           }});
       });
 
@@ -322,7 +367,7 @@ if (Meteor.isServer) {
         IMAGE: baseImage + ':' + b
       }
 
-      log.info('stop stack', b, stack);
+      log.info('stop stack', b);
 
       for (let service in stack) {
         for (let name in stack[service]) {
@@ -330,28 +375,28 @@ if (Meteor.isServer) {
         }
       }
 
-      // log.debug('envs', envs);
-
       let command = spawn('sh', ['-cx', [
         "cd " + conf.localGitDir,
         dockerCompose + " -p " + baseImage + b + " stop"
       ].join(' && ')], { env: envs });
 
-      logCommand(command, br, "stopping...", function() {
+      logCommand(command, br, "stopping...", null, function() {
         Branches.update(br, { $set : {
           log: Branches.findOne(br)['log'] + "\n= DONE =",
           stack: {},
           uptime: null,
           status: 'stopped',
           running: false, // TODO: check running in docker instead
-          triggered: 'manually', //null,
-          time: (new Date).toTimeString()
+          triggered: 'manually',
+          time: (new Date).toTimeString(),
+          runningCommit: null,
+          pendingChecksum: null
         }});
       });
     },
 
     toggleWatch: function(branchName, watch) {
-      Branches.update({ branch: branchName, app: conf.serviceName }, { $set :
+      Branches.update( bs(branchName), { $set :
         { watching : watch }
       });
     },
@@ -363,54 +408,13 @@ if (Meteor.isServer) {
   });
 
   Meteor.startup(function () {
-    log.info('server start. app', conf.serviceName);
+    log.info('Brancher app', conf.serviceName);
     log.info('local git', conf.localGitDir);
     // TODO: print git remote location
 
     // Branches.remove({}); // clears the DB
 
-    // first pass on DB at startup for cleaning purposes?
-    // is this ever getting called?
-    Meteor.bindEnvironment( function() {
-      let branches = getAllBranches();
-
-      branches.forEach(function(val, i) {
-
-        Branches.update({ branch: val['branch'], app: conf.serviceName }, { $set:{
-          branch: val['branch'],
-          lastCommit: getLastCommit(val['branch']),  // might not be same as running?
-          log: ''   // TODO: why no work?
-        }},
-        { upsert : true });
-
-      });
-
-    });
-
-    setInterval(Meteor.bindEnvironment( function() {
-
-      // listen for new/old branches
-      let branches = getAllBranches();
-
-      branches.forEach(function(val, i) {
-        Branches.update({ branch: val['branch'], app: conf.serviceName }, { $set:{
-          running: val['running'],
-          uptime: val['uptime'],
-          lastCommit: getLastCommit(val['branch'])  // might not be same as running?
-        }},
-        { upsert : true });
-
-      });
-
-      // listen to existing branches for changes
-      let watchBranches = Branches.find({ watching: true, app: conf.serviceName });
-
-      // TODO: implement queue here so the same build does not fall over itself
-      watchBranches.forEach(function(val, i) {
-        checkForUpdate(val['branch'], val);
-      });
-
-    }), 10000);
+    listenForBranchesAndCommits();
 
   });
 }

@@ -32,11 +32,11 @@ TODO: explain settings.json
 
 ## TODO
 
-* queue found git changes so builds dont fall over eachother
+* queue found git changes so builds dont fall over each other. perhaps:  https://atmospherejs.com/vsivsi/job-collection
 * allow config to check for branches and commits locally or remotely
-* show dates/uptime for git and docker run
-* fetch unused ports instead of random ones
+* timeout random port checking
 * parse compose file instead of setting ports in config
+* stop a running stack when its branch disappears
 * show when git last commit is different then the last deployed checksum
 * growl git updates or log them somewhere?
 * finish Dockerizing

@@ -80,6 +80,14 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.commit.helpers({
+    prepMessage: function(message) {
+      if (message.length > 45)
+        return message.substring(0, 45) + "...";
+      return message;
+    }
+  });
+
   Template.registerHelper("objectToPairs",function(object){
     return _.map(object, function(value, key) {
       return {  key: key,  value: value  };
