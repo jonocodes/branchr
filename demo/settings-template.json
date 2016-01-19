@@ -2,7 +2,7 @@
   "public": {
     "serviceName": "Demo App",
     "localGitDir": "$SETTINGS_GIT",
-    "repoLocallity": "local",
+    "repoLocallity": "remote",
     "dockerBuildDir" : "$SETTINGS_GIT",
     "dockerComposeFile": "/tmp/app-compose.yml",
     "dockerBuildCmd": "docker build -t \$IMAGE .",

@@ -88,21 +88,40 @@ if (Meteor.isServer) {
       "git checkout " + branchName,
       pullCommand].join(' && ')]);
 
+    let result = null;
+
     command.stdout.on('data', function (data) {
-      future.return(data.toString());
+      result = data.toString()
     });
 
     command.stderr.on('data', function (data) {
       // log.error("stderr: " + data);
     });
 
+    command.on('close', function(code) {
+      future.return(result);
+    });
+
     future.wait();
 
-    let lastCommit = getLastCommit(branchName);
+    let lastChecksum = getLastCommit(branchName)['checksum'];
     let pendingChecksum = branchInDb['pendingChecksum'];
+    let runningCommit = branchInDb['runningCommit'];
 
-    if (lastCommit['checksum'] !== pendingChecksum) {
-      log.info('git was updated for ' + branchName);
+    let runningChecksum = null;
+
+    if (runningCommit != null)
+      runningChecksum = runningCommit['checksum'];
+
+    // only run if it's checksum in not already running or pending
+
+    if (//runningCommit == null ||
+      lastChecksum !== runningChecksum &&
+      lastChecksum !== pendingChecksum) {
+
+      log.debug('git was updated for ' + branchName);
+      log.debug('runningCommit', runningCommit);
+      log.debug('lastChecksum', lastChecksum);
 
       // TODO: queue up instead of calling immediately?
 
@@ -137,12 +156,18 @@ if (Meteor.isServer) {
       pullCommand + " && " +
       "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%nmessage %s%nemail %ae%ndate %ai'"]);
 
+    let result = null;
+
     command.stdout.on('data', function(data) {
-      future.return(parseCommit(data.toString().trim()));
+      result = parseCommit(data.toString().trim());
     });
 
     command.stderr.on('data', function(data) {
       log.error("stderr: " + data);
+    });
+
+    command.on('close', function(code) {
+      future.return(result);
     });
 
     return future.wait();
@@ -156,10 +181,10 @@ if (Meteor.isServer) {
       "cd " + conf.localGitDir + " && " +
       "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
-    command.stdout.on('data', function (data) {
-      let branchNames = data.toString().trim().split("\n");
+    let resultList = [];
 
-      var resultList = [];
+    command.stdout.on('data', function(data) {
+      let branchNames = data.toString().trim().split("\n");
 
       for (let i in branchNames) {
         resultAssoc = {};
@@ -167,11 +192,14 @@ if (Meteor.isServer) {
         resultList.push(resultAssoc);
       }
 
-      future.return(resultList); // TODO: append since this is a stream?
     });
 
-    command.stderr.on('data', function (data) {
+    command.stderr.on('data', function(data) {
       log.error("stderr: " + data);
+    });
+
+    command.on('close', function(code) {
+      future.return(resultList);
     });
 
     return future.wait();
@@ -183,7 +211,7 @@ if (Meteor.isServer) {
     let command = spawn('sh', ['-c',
       "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
 
-    var branches = {};
+    let branches = {};
 
     command.stdout.on('data', function (data) {
 
@@ -208,8 +236,6 @@ if (Meteor.isServer) {
 
         branches[branch]['stack'][service] = ports;
       }
-
-      future.return(branches);
     });
 
     command.stderr.on('data', function (data) {
@@ -217,8 +243,7 @@ if (Meteor.isServer) {
     });
 
     command.on('close', function(code) {
-      if (!future.isResolved())
-        future.return({});
+      future.return(branches);
     });
 
     return future.wait();
