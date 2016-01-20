@@ -1,0 +1,41 @@
+
+var net = require('net');
+
+// Finds an available port within the specified range. The 
+// selection is random. Gives up after a maximum number of attempts.
+//
+//   callback - function to invoke to display result
+//   minport  - minimum port of range to inspect (default: 5000)
+//   maxport  - maximum port of range to inspect (default: 2^16-1)
+//   retries  - maximum number of retries (default: 25)
+//
+// prints available port, if found, 0 otherwise.
+
+var randPort = function(callback, minport, maxport, retries) {
+
+  // default values
+  retries = typeof retries !== 'undefined' ? retries : 25;
+  minport = typeof minport !== 'undefined' ? minport : 5000;
+  maxport = typeof maxport !== 'undefined' ? maxport : 65535;
+
+  if (retries == 0) {
+    callback(0); return;
+  }
+
+  var port = Math.floor(Math.random() * (maxport - minport)) + minport;
+
+  var server = net.createServer();
+  server.listen(port, function (err) {
+    server.once('close', function () {
+      callback(port);
+    });
+    server.close();
+  });
+  server.on('error', function (err) {
+    randPort(callback, minport, maxport, --retries);
+  });
+}
+
+randPort(console.log);
+randPort(console.log, 22, 22, 2);
+randPort(console.log, 5000, 10000);

@@ -7,8 +7,8 @@ A continuous delivery pipeline for running git branches of a web service.
 ![Screenshot](screenshot.png)
 
 ## Requirements
-* Docker
-* docker-compose
+* Docker >= 1.9
+* docker-compose >= 1.5
 * git
 * [Meteor](https://www.meteor.com/install) (for development only)
 
@@ -27,6 +27,8 @@ The demo will pull down a sample app and run Branchr for you. Run the project us
 ## Usage
 
 The app you want to run should be managed by git, have a Docker image for it and a compose file. Compose file needs to have environment variables for ports...
+
+It is recommended that you connect to your remote git repo using an ssh key file with no pass phrase.
 
 TODO: explain settings.json
 

@@ -344,7 +344,9 @@ if (Meteor.isServer) {
       log.info("starting stack", b);
 
       let command = spawn('sh', ['-cx', [
-        // "ssh -T git@github.com", // ssh-agent -l
+        // "eval `ssh-agent -s`",
+        // "ssh-add -l",
+        // "ssh -T git@github.com",
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
         pullCommand,
