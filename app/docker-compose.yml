@@ -2,9 +2,8 @@ branchr:
   build: .
   ports:
     - 3000:80
-  links:
-    - mongo
-  # privileged: true
+  # links:
+  #   - mongo
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - $GIT_DIR:/git
@@ -12,7 +11,8 @@ branchr:
     - $HOME/.ssh:/root/.ssh:ro
     # TODO: bring over ssh keys for private git repos
   environment:
-    - MONGO_URL=mongodb://mongo/branchr
+    - MONGO_URL=mongodb://app_mongo_1/branchr
+    # - MONGO_URL=mongodb://mongo/branchr
     - ROOT_URL=http://localhost
     - 'METEOR_SETTINGS=$METEOR_SETTINGS'
 

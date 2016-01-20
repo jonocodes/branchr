@@ -52,7 +52,7 @@ if [ "$MODE" == "dev" ]; then
 
 elif [ "$MODE" == "docker" ]; then
 
-  COMPOSE="docker-compose -f ../app/docker-compose.yml"
+  COMPOSE="docker-compose --x-networking -f ../app/docker-compose.yml"
 
   export GIT_DIR=$LOCAL_GIT
   export APP_COMPOSE=/tmp/app-compose.yml

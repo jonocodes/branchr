@@ -1,9 +1,10 @@
 web:
   image: $IMAGE
   ports:
-   - $PORT_HTTP_WEB:5000
+    - $PORT_HTTP_WEB:5000
   links:
-   - redis
+    - redis
+
 redis:
   ports:
     - $PORT_TCP_REDIS:6379
