@@ -15,10 +15,6 @@ akita:
     - CAS_URL=https://localhost:${PORT_HTTPS_CAS}
     - CAS_URL_INTERNAL=https://nedcas:8443
     - SECRET_KEY_BASE=secretgoeshere
-    - SSL=generatekeys  # options = none, existingkeys, generatekeys
-  # volumes:    # when using SSL=existingkeys
-  #   - /etc/nginx/ssl/nginx.key:/etc/nginx/ssl/nginx.key:ro
-  #   - /etc/nginx/ssl/nginx.crt:/etc/nginx/ssl/nginx.crt:ro
     - EXACTTARGET_ID=
     - EXACTTARGET_SECRET=
     - SALESFORCE_HOST=
@@ -29,9 +25,13 @@ akita:
     - SALESFORCE_CONSUMER_APP=
     - SALESFORCE_CONSUMER_PASSWORD=
     - MOODLE_TOKEN=
+    - SSL=generatekeys  # options = none, existingkeys, generatekeys
+  # volumes:    # when using SSL=existingkeys
+  #   - ${DOCKERFILES}/projects/selfsigned.key:/etc/nginx/ssl/nginx.key:ro
+  #   - ${DOCKERFILES}/projects/selfsigned.crt:/etc/nginx/ssl/nginx.crt:ro
 
 mailcatcher:
-  image: mailcatcher
+  image: schickling/mailcatcher
   ports:
     - ${PORT_HTTP_MAILCATCHER}:1080
 
@@ -50,6 +50,8 @@ nedcas:
     - MYSQL_DATABASE=namedEntities
     - NED_SERVICE=https://nedapi:8443/v0
     - REGISTRATION_BASE_URL=https://localhost   # TODO: fix this
+  # volumes:
+  #   - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
 
 nedapi:
   image: nedapi:develop
@@ -66,6 +68,8 @@ nedapi:
     - MYSQL_DATABASE=namedEntities
     - AMBRA_DATABASE=ambra
     - RINGGOLD_DATABASE=ringgold
+  # volumes:
+  #   - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
 
 neddb:
   image: percona:5.6

@@ -13,6 +13,8 @@ nedapi:
     - MYSQL_DATABASE=namedEntities
     - AMBRA_DATABASE=ambra
     - RINGGOLD_DATABASE=ringgold
+  volumes:
+    - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
 
 neddb:
   image: percona:5.6
