@@ -6,6 +6,12 @@
 
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
 
+  <link rel="stylesheet"
+  href="https://raw.githubusercontent.com/kleinejan/titatoggle/master/dist/titatoggle-dist-min.css" />
+
+  <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.0/css/bootstrap-toggle.min.css" rel="stylesheet">
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.0/js/bootstrap-toggle.min.js"></script>
+
   <title>Branchr</title>
 </head>
 
@@ -28,10 +34,15 @@
     <div class="row">
       <div class="col-md-offset-1 col-md-10">
         <table class="table table-hover">
-          <thead>
-            <tr><th>branch</th><th>last commit</th><th>running commit</th><th>actions</th>
-              <th>watch</th><th>status</th><th>stack</th></tr>
-            </thead>
+          <thead><tr>
+              <th class="col-md-2">branch</th>
+              <th class="col-md-2">last commit</th>
+              <th class="col-md-2">running commit</th>
+              <th class="col-md-1">actions</th>
+              <th class="col-md-1">changes</th>
+              <th class="col-md-1">status</th>
+              <th class="col-md-3">stack</th>
+            </tr></thead>
           <tbody>
             {{#each branches}}
               {{> branchrow}}
@@ -74,9 +85,19 @@
           <button class="start"><i class="fa fa-play"></i></button>
         {{/if}}
       {{/if}}
+
     </td>
     <td class="center">
       <input type="checkbox" class="watchbox" checked="{{isWatching}}">
+
+      <input checked data-toggle="toggle" type="checkbox">
+
+      <div class="checkbox checkbox-slider--default">
+      	<label>
+      		<input type="checkbox"><span>TiTaToggle</span>
+      	</label>
+      </div>
+
     </td>
     <td>
       <!-- {{#if triggered}}
