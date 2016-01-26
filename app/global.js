@@ -17,6 +17,10 @@ if (conf.localGitDir === undefined) {
   process.exit(1);
 }
 
+if (conf.envs === undefined) {
+  conf.envs = {};
+}
+
 if (conf.repoLocallity === undefined || conf.repoLocallity != "remote")
   conf.repoLocallity = "local";
 

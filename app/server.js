@@ -329,7 +329,8 @@ if (Meteor.isServer) {
       let br = bs(b);
       let image = baseImage + ':' + b;
       let stack = {};
-      let envs = {  IMAGE: image  }
+      let envs = conf.envs;
+      envs['IMAGE'] = image;
       let runningCommit = getLastCommit(b);
 
       for (let service in conf.requiredPorts) {
@@ -344,9 +345,6 @@ if (Meteor.isServer) {
       log.info("starting stack", b);
 
       let command = spawn('sh', ['-cx', [
-        // "eval `ssh-agent -s`",
-        // "ssh-add -l",
-        // "ssh -T git@github.com",
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
         pullCommand,
@@ -385,10 +383,8 @@ if (Meteor.isServer) {
       let b = branch['branch'];
       let br = bs(b);
       let stack = branch['stack'];
-
-      let envs = {
-        IMAGE: baseImage + ':' + b
-      }
+      let envs = conf.envs;
+      envs['IMAGE'] = baseImage + ':' + b;
 
       log.info('stop stack', b);
 

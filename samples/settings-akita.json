@@ -3,9 +3,13 @@
     "serviceName": "Akita",
     "localGitDir": "/home/jono/src/akita",
     "dockerBuildDir" : "/home/jono/src/Dockerfiles",
-    "dockerComposeFile": "/home/jono/src/branchr/samples/akita_nedapi_nedcas.yml",
+    "dockerComposeFile": "/home/jono/src/branchr/samples/akita.yml",
     "dockerBuildCmd": "projects/akita/build-image.sh",
     "host": "localhost",
+
+    "envs": {
+      "DOCKERFILES": "/home/jono/src/Dockerfiles"
+    },
 
     "requiredPorts" : {
       "akita" : [
