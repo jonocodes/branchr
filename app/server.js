@@ -83,7 +83,7 @@ if (Meteor.isServer) {
 
     log.info('checking for updates in ' + branchName);
 
-    let command = spawn('sh', ['-c', [
+    let command = spawn('bash', ['-c', [
       "cd " + conf.localGitDir,
       "git checkout " + branchName,
       pullCommand].join(' && ')]);
@@ -151,7 +151,7 @@ if (Meteor.isServer) {
 
     var future = new Future();
 
-    let command = spawn('sh', ['-c',
+    let command = spawn('bash', ['-c',
       "cd " + conf.localGitDir + " && " +
       pullCommand + " && " +
       "git log origin/" + branchName + " -1 --format='checksum %h%nauthor %an%ndateRelative %cr%nmessage %s%nemail %ae%ndate %ai'"]);
@@ -177,7 +177,7 @@ if (Meteor.isServer) {
 
     var future = new Future();
 
-    let command = spawn('sh', ['-c',
+    let command = spawn('bash', ['-c',
       "cd " + conf.localGitDir + " && " +
       "git branch --remote|grep -v origin/HEAD|sed 's/[^/]*\\///'"]);
 
@@ -208,7 +208,7 @@ if (Meteor.isServer) {
   function getRunningBranches() {
     var future = new Future();
 
-    let command = spawn('sh', ['-c',
+    let command = spawn('bash', ['-c',
       "docker ps --filter 'name=" + baseImage + "' --format '{{.Names}}\t{{.Status}}\t{{.Ports}}'"]);
 
     let branches = {};
@@ -344,7 +344,7 @@ if (Meteor.isServer) {
 
       log.info("starting stack", b);
 
-      let command = spawn('sh', ['-cx', [
+      let command = spawn('bash', ['-cx', [
         "cd " + conf.localGitDir,
         "git checkout " + b,       // TODO: handle error code returns
         pullCommand,
@@ -394,7 +394,7 @@ if (Meteor.isServer) {
         }
       }
 
-      let command = spawn('sh', ['-cx', [
+      let command = spawn('bash', ['-cx', [
         "cd " + conf.localGitDir,
         dockerCompose + " -p " + baseImage + b + " stop"
       ].join(' && ')], { env: envs });
