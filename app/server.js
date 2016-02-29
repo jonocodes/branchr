@@ -3,7 +3,7 @@ if (Meteor.isServer) {
   var Future = Npm.require('fibers/future');
   const spawn = Npm.require('child_process').spawn;
 
-  const baseImage = dockerNamify(conf.serviceName);
+  const baseImage = dockerNameSanitize(conf.serviceName);
   const dockerCompose = "docker-compose -f " + conf.dockerComposeFile;
 
   const minPort = 5000;
@@ -68,9 +68,10 @@ if (Meteor.isServer) {
     return future.wait();
   }
 
-  function dockerNamify(name) {
+  function dockerNameSanitize(name) {
     // turn into a name that is a valid for a docker container
-    return name.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    return name.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    // return name.toLowerCase().replace(/[^a-z0-9_.]/g, '_');
   }
 
   // helper function to select a branch
@@ -260,7 +261,7 @@ if (Meteor.isServer) {
       "  watched: " + Object.keys(watchBranches).length);
 
     for (let i in allBranches) {
-      let dockerName = dockerNamify(allBranches[i]['branch']);
+      let dockerName = dockerNameSanitize(allBranches[i]['branch']);
 
       if (Object.keys(runningBranches).length === 0 || runningBranches[dockerName] == null) {
         allBranches[i]['running'] = false;
@@ -327,10 +328,9 @@ if (Meteor.isServer) {
 
       let b = branch['branch'];
       let br = bs(b);
-      let image = baseImage + ':' + b;
       let stack = {};
       let envs = conf.envs;
-      envs['IMAGE'] = image;
+      envs['IMAGE'] = baseImage + ':' + dockerNameSanitize(b);
       let runningCommit = getLastCommit(b);
 
       for (let service in conf.requiredPorts) {
@@ -384,7 +384,7 @@ if (Meteor.isServer) {
       let br = bs(b);
       let stack = branch['stack'];
       let envs = conf.envs;
-      envs['IMAGE'] = baseImage + ':' + b;
+      envs['IMAGE'] = baseImage + ':' + dockerNameSanitize(b);
 
       log.info('stop stack', b);
 

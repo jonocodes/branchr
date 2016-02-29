@@ -37,9 +37,9 @@
           <thead><tr>
               <th class="col-md-2">branch</th>
               <th class="col-md-2">last commit</th>
-              <th class="col-md-2">running commit</th>
+              <!-- <th class="col-md-2">running commit</th> -->
               <th class="col-md-1">actions</th>
-              <th class="col-md-1">changes</th>
+              <th class="col-md-1">watch</th><!-- changes -->
               <th class="col-md-1">status</th>
               <th class="col-md-3">stack</th>
             </tr></thead>
@@ -67,13 +67,15 @@
         {{> commit}}
       {{/with}}
     </td>
-    <td>
+    <!-- <td>
       {{#with runningCommit}}
         {{> commit}}
       {{/with}}
-    </td>
+    </td> -->
     <td>
-      <button class="log"><i class="fa fa-book"></i></button>
+
+      <!-- <button class="log"><i class="fa fa-book"></i></button> -->
+
       <!-- <button class="log"><i class="fa fa-book {{#if isLogging branch}}fa-rotate-90{{/if}}"></i></button> -->
 
       {{#if isWorking status}}
@@ -90,13 +92,13 @@
     <td class="center">
       <input type="checkbox" class="watchbox" checked="{{isWatching}}">
 
-      <input checked data-toggle="toggle" type="checkbox">
+      <!-- <input checked data-toggle="toggle" type="checkbox"> -->
 
-      <div class="checkbox checkbox-slider--default">
+      <!-- <div class="checkbox checkbox-slider-default">
       	<label>
       		<input type="checkbox"><span>TiTaToggle</span>
       	</label>
-      </div>
+      </div> -->
 
     </td>
     <td>

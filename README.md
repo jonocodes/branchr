@@ -7,8 +7,8 @@ A continuous delivery pipeline for running git branches of a web service.
 ![Screenshot](screenshot.png)
 
 ## Requirements
-* Docker >= 1.9
-* docker-compose >= 1.5
+* Docker >= 1.10
+* docker-compose >= 1.6
 * git
 * [Meteor](https://www.meteor.com/install) (for development only)
 
@@ -35,10 +35,10 @@ TODO: explain settings.json
 ## TODO
 
 * queue found git changes so builds dont fall over each other. perhaps:  https://atmospherejs.com/vsivsi/job-collection
+* if no queue, write checkouts to separate directories, as capistrano does with git archive?
 * allow config to check for branches and commits locally or remotely
 * timeout random port checking
 * parse compose file instead of setting ports in config
 * stop a running stack when its branch disappears
 * show when git last commit is different then the last deployed checksum
 * growl git updates or log them somewhere?
-* finish Dockerizing
