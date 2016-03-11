@@ -10,10 +10,10 @@ akita:
   environment:
     - NED_SERVICE=http://nedapi:8080/v1
     - MAILER_ADDRESS=mailcatcher
+    - MAILER_PORT=1025
     - NED_USERAPP=dev
     - NED_PASSWORD=dev
-    - CAS_URL=https://localhost:${PORT_HTTPS_CAS}
-    - CAS_URL_INTERNAL=https://nedcas:8443
+    - CAS_URL=https://nedcas:8443
     - SECRET_KEY_BASE=secretgoeshere
     - EXACTTARGET_ID=
     - EXACTTARGET_SECRET=
