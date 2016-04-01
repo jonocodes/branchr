@@ -1,6 +1,6 @@
 # Branchr
 
-A continuous delivery pipeline for running git branches of a web service.
+A continuous feature branch monitoring tool for web applications in development.
 
 # Screenshot
 
@@ -18,11 +18,11 @@ Make sure docker is setup to [run without needing sudo](http://askubuntu.com/que
 
 The demo will pull down a sample app and run Branchr for you. Run the project using Docker or in development mode (see below). Then visit http://localhost:3000
 
-### Using Docker
-`demo/run.sh docker`
-
 ### In development
 `demo/run.sh dev`
+
+### Using Docker
+`demo/run.sh docker`
 
 ## Usage
 
@@ -42,3 +42,4 @@ TODO: explain settings.json
 * stop a running stack when its branch disappears
 * show when git last commit is different then the last deployed checksum
 * growl git updates or log them somewhere?
+* animated screenshot for readme - FFcast, gifify, LICEcap, silentcast?

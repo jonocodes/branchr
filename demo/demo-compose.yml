@@ -1,11 +1,13 @@
-web:
-  image: $IMAGE
-  ports:
-    - $PORT_HTTP_WEB:5000
-  links:
-    - redis
+version: '2'
 
-redis:
-  ports:
-    - $PORT_TCP_REDIS:6379
-  image: redis
+services:
+
+  web:
+    image: $IMAGE
+    ports:
+      - $PORT_HTTP_WEB:5000
+
+  redis:
+    ports:
+      - $PORT_TCP_REDIS:6379
+    image: redis
