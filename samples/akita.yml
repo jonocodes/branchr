@@ -1,79 +1,39 @@
-akita:
-  image: $IMAGE
-  ports:
-    - ${PORT_HTTP_AKITA}:80
-    - ${PORT_HTTPS_AKITA}:443
-  links:
-    - nedapi:nedapi
-    - mailcatcher:mailcatcher
-    - nedcas:nedcas
-  environment:
-    - NED_SERVICE=http://nedapi:8080/v1
-    - MAILER_ADDRESS=mailcatcher
-    - MAILER_PORT=1025
-    - NED_USERAPP=dev
-    - NED_PASSWORD=dev
-    - CAS_URL=https://nedcas:8443
-    - SECRET_KEY_BASE=secretgoeshere
-    - EXACTTARGET_ID=
-    - EXACTTARGET_SECRET=
-    - SALESFORCE_HOST=
-    - SALESFORCE_CLIENT_ID=
-    - SALESFORCE_CLIENT_SECRET=
-    - SALESFORCE_USERNAME=
-    - SALESFORCE_PASSWORD=
-    - SALESFORCE_CONSUMER_APP=
-    - SALESFORCE_CONSUMER_PASSWORD=
-    - MOODLE_TOKEN=
-    - SSL=existingkeys  # options = none, existingkeys, generatekeys
-  volumes:    # when using SSL=existingkeys
-    - ${DOCKERFILES}/projects/selfsigned.key:/etc/nginx/ssl/nginx.key:ro
-    - ${DOCKERFILES}/projects/selfsigned.crt:/etc/nginx/ssl/nginx.crt:ro
+version: '2'
 
-mailcatcher:
-  image: schickling/mailcatcher
-  ports:
-    - ${PORT_HTTP_MAILCATCHER}:1080
+services:
 
-nedcas:
-  image: nedcas:develop
-  links:
-    - neddb:neddb
-    - nedapi:nedapi
-  ports:
-    - ${PORT_HTTPS_CAS}:8443
-  environment:
-    - MYSQL_ROOT_PASSWORD=root
-    - MYSQL_USER=ned
-    - MYSQL_USER_PASSWORD=ned
-    - MYSQL_HOSTNAME=neddb
-    - MYSQL_DATABASE=namedEntities
-    - NED_SERVICE=https://nedapi:8443/v0
-    - REGISTRATION_BASE_URL=https://localhost:${PORT_HTTPS_AKITA}   # TODO: fix this
-  volumes:
-    - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
+  akita:
+    extends:
+      file: common.yml
+      service: akita
+    image: $IMAGE
+    ports:
+      - ${PORT_HTTP_AKITA}:80
+      - ${PORT_HTTPS_AKITA}:443
 
-nedapi:
-  image: nedapi:develop
-  ports:
-    - ${PORT_HTTP_NED}:8080
-    - ${PORT_HTTPS_NED}:8443
-  links:
-    - neddb:neddb
-  environment:
-    - MYSQL_ROOT_PASSWORD=root
-    - MYSQL_USER=ned
-    - MYSQL_USER_PASSWORD=ned
-    - MYSQL_HOSTNAME=neddb
-    - MYSQL_DATABASE=namedEntities
-    - AMBRA_DATABASE=ambra
-    - RINGGOLD_DATABASE=ringgold
-  volumes:
-    - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
+  mailcatcher:
+    extends:
+      file: common.yml
+      service: mailcatcher
+    ports:
+      - ${PORT_HTTP_MAILCATCHER}:1080
 
-neddb:
-  image: percona:5.6
-  environment:
-    - MYSQL_ROOT_PASSWORD=root
-  # volumes:    # to persist database between runs
-  #   - /var/lib/mysql
+  nedcas:
+    extends:
+      file: common.yml
+      service: nedcas
+    ports:
+      - ${PORT_HTTPS_CAS}:8443
+
+  nedapi:
+    extends:
+      file: common.yml
+      service: nedapi
+    ports:
+      - ${PORT_HTTP_NED}:8080
+      - ${PORT_HTTPS_NED}:8443
+
+  neddb:
+    extends:
+      file: common.yml
+      service: neddb

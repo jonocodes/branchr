@@ -1,0 +1,168 @@
+version: '2'
+
+services:
+
+  akita:
+    image: akita:develop
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - NED_SERVICE=http://nedapi:8080/v1
+      - MAILER_ADDRESS=mailcatcher
+      - MAILER_PORT=1025
+      - NED_USERAPP=dev
+      - NED_PASSWORD=dev
+      - CAS_URL=https://nedcas:8443
+      - SECRET_KEY_BASE=secretgoeshere
+      - EXACTTARGET_ID=
+      - EXACTTARGET_SECRET=
+      - SALESFORCE_HOST=
+      - SALESFORCE_CLIENT_ID=
+      - SALESFORCE_CLIENT_SECRET=
+      - SALESFORCE_USERNAME=
+      - SALESFORCE_PASSWORD=
+      - SALESFORCE_CONSUMER_APP=
+      - SALESFORCE_CONSUMER_PASSWORD=
+      - MOODLE_TOKEN=
+      - SSL=existingkeys  # options = none, existingkeys, generatekeys
+      # TODO: remove generate keys. doesnt seem needed if existing keys works
+    volumes:    # when using SSL=existingkeys
+      - ${DOCKERFILES}/projects/selfsigned.key:/etc/nginx/ssl/nginx.key:ro
+      - ${DOCKERFILES}/projects/selfsigned.crt:/etc/nginx/ssl/nginx.crt:ro
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    ports:
+      - 1080:1080
+
+  nedcas:
+    image: nedcas:develop
+    ports:
+      - 8443:8443
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=ned
+      - MYSQL_USER_PASSWORD=ned
+      - MYSQL_HOSTNAME=neddb
+      - MYSQL_DATABASE=namedEntities
+      - CAS_DATABASE=cas
+      - NED_SERVICE=https://nedapi:8443/v1
+      - REGISTRATION_BASE_URL=https://localhost   # TODO: fix this
+      - COOKIE_DOMAIN=nedcas
+    volumes:
+      - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
+
+  nedapi:
+    extends: ned-proxyable
+    ports:
+      - 8081:8080
+      - 8444:8443
+    volumes:
+      - ${DOCKERFILES}/projects/selfsigned.jks:/root/web.jks:ro
+
+  ned-proxyable:
+    image: nedapi:develop
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=ned
+      - MYSQL_USER_PASSWORD=ned
+      - MYSQL_HOSTNAME=neddb
+      - MYSQL_DATABASE=namedEntities
+      - AMBRA_DATABASE=ambra
+      - RINGGOLD_DATABASE=ringgold
+
+  neddb:
+    image: percona:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    # volumes:    # enable to persist database between runs
+    #   - /var/lib/mysql
+
+  ambra:
+    image: ambra:master
+    ports:
+      - "80:8080"
+    volumes:
+      - ../../templates:/root/templates
+      # - ../tests/test_data/sample_templates:/root/templates
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=ambra
+      - MYSQL_USER_PASSWORD=ambra
+      - MYSQL_HOSTNAME=ambradb
+      - MYSQL_DATABASE=ambra
+      - REPO_SERVICE=http://contentrepo:8080
+
+  wombat:
+    image: wombat:master
+    volumes:
+      - ../../plos-themes:/root/themes
+    ports:
+      - 8081:8080
+    environment:
+      - RHINO_SERVICE=http://rhino:8080
+
+  rhino:
+    image: rhino:master
+    ports:
+      - 8080:8080
+    volumes:
+      - $HOME/datastores/ingest:/root/ingest
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=ambra
+      - MYSQL_USER_PASSWORD=ambra
+      - MYSQL_HOSTNAME=ambradb
+      - MYSQL_DATABASE=ambra
+      - REPO_SERVICE=http://contentrepo:8080
+
+  ambradb:
+    image: percona:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - 3306:3306
+
+  solr:
+    image: solr:master
+    ports:
+      - "8983:8080"
+    volumes:
+      - "$HOME/datastores/solr:/usr/local/tomcat/solr/home/data"
+
+  contentrepo:
+    image: contentrepo:master
+    ports:
+      - "8085:8080"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=repouser
+      - MYSQL_USER_PASSWORD=
+      - MYSQL_HOSTNAME=repodb
+      - MYSQL_DATABASE=repo
+      - MOGILE_TRACKERS=mogiletracker:7001
+
+  repodb:
+    image: percona:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3305:3306"
+
+  mogiletracker:
+    image: mogiletracker
+    environment:
+      - MYSQL_HOSTNAME=mogiledb
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_USER=mogile
+      - MYSQL_USER_PASSWORD=mogile
+      - MOG_NODE_HOST=mogilenode
+
+  mogilenode:
+    image: mogilenode
+
+  mogiledb:
+    image: percona:5.6
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
