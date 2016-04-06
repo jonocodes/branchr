@@ -4,7 +4,7 @@ A continuous feature branch monitoring tool for web applications in development.
 
 This is NOT a continuous integration server (see the FAQ). It is a way to watch and present the ongoing work done in a project.
 
-Several non-free platform specific tools exist that solve a similar problem like [Pantheon's Multidev](https://devcenter.heroku.com/articles/github-integration-review-apps) and [Heroku's Review Apps](https://pantheon.io/features/multidev-cloud-environments). Branchr is a generic open source solution that you can run for any app anywhere.
+Several non-free platform specific tools exist that solve a similar problem like [Pantheon's Multidev](https://pantheon.io/features/multidev-cloud-environments) and [Heroku's Review Apps](https://devcenter.heroku.com/articles/github-integration-review-apps). Branchr is a generic open source solution that you can run for any app anywhere.
 
 # Screenshot
 
